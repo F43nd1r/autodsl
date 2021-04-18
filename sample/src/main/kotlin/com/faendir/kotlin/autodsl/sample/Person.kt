@@ -9,7 +9,7 @@ annotation class MyDsl
 
 @AutoDsl(dslMarker = MyDsl::class)
 class Person(
-        val name: String = "Hello",
+        val name: String = "Max",
         val age: Int,
         val address: Address?,
         val friends: List<Person> = emptyList()
@@ -33,7 +33,7 @@ class Location {
         lng = 0.0
     }
 
-    // in multiple constructors you can specify which one to use.
+    // with multiple constructors you can specify which one to use.
     @AutoDslConstructor
     constructor(lat: Double, lng: Double) {
         this.lat = lat
