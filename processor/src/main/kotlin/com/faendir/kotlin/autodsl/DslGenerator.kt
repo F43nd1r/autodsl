@@ -28,7 +28,7 @@ class DslGenerator(private val logger: KSPLogger, private val codeGenerator: Cod
     private val annotationType = resolver.getClassDeclarationByName<Annotation>()!!.asStarProjectedType()
     private val parameterFactory = ParameterFactory(resolver)
 
-    fun generate(clazz: KSClassDeclaration) {
+    fun generate(clazz: KSClassDeclaration, markerType: KSType) {
         if (clazz.isAbstract()) {
             logger.error("@AutoDsl can't be applied to $clazz: must not be abstract", clazz)
             return
@@ -44,7 +44,7 @@ class DslGenerator(private val logger: KSPLogger, private val codeGenerator: Cod
         val parameters = parameterFactory.get(constructor.parameters)
         val builderType = clazz.asStarProjectedType().toTypeName().withBuilderSuffix()
         FileSpec.builder(clazz.packageName.asString(), "${clazz.simpleName.getShortName()}Dsl")
-            .addType(generateBuilder(builderType, parameters, clazz))
+            .addType(generateBuilder(builderType, markerType, parameters, clazz))
             .addFunction(generateDslEntryPointFunction(clazz, builderType))
             .build()
             .writeTo(clazz.containingFile!!, codeGenerator)
@@ -58,15 +58,14 @@ class DslGenerator(private val logger: KSPLogger, private val codeGenerator: Cod
             .build()
     }
 
-    private fun generateBuilder(builderType: ClassName, parameters: List<Parameter>, clazz: KSClassDeclaration): TypeSpec {
+    private fun generateBuilder(builderType: ClassName, markerType: KSType, parameters: List<Parameter>, clazz: KSClassDeclaration): TypeSpec {
         val classBuilder = TypeSpec.classBuilder(builderType.simpleName)
             .addProperty(PropertySpec.builder(DEFAULTS_BITFLAGS_FIELD_NAME, INT, KModifier.PRIVATE).mutable(true).initializer("-1").build())
             .addProperties(parameters.map { it.getProperty() })
             .addFunction(generateBuildFunction(clazz, parameters))
             .addFunctions(parameters.flatMap { it.additionalFunctions() })
-        val dslMarkerClass = clazz.getAnnotationTypeProperty(AutoDsl::dslMarker)
-        if (dslMarkerClass != annotationType) {
-            classBuilder.addAnnotation(dslMarkerClass.toClassName())
+        if (markerType != annotationType) {
+            classBuilder.addAnnotation(markerType.toClassName())
         }
         return classBuilder.build()
     }

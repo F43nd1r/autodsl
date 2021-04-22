@@ -8,6 +8,9 @@ import kotlin.math.max
 annotation class MyDsl
 
 @AutoDsl(dslMarker = MyDsl::class)
+annotation class MetaAutoDsl
+
+@AutoDsl(dslMarker = MyDsl::class)
 class Person(
         val name: String = "Max",
         val age: Int,
@@ -16,7 +19,7 @@ class Person(
     )
 
 
-@AutoDsl(dslMarker = MyDsl::class)
+@MetaAutoDsl
 data class Address(
     val street: String,
     val zipCode: Int,
