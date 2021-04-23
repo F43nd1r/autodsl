@@ -1,0 +1,29 @@
+<idea-plugin>
+    <id>com.faendir.kotlin.autodsl.inspections</id>
+    <name>Kotlin AutoDsl Inspections</name>
+    <vendor email="support@fandir.com" url="https://faendir.com">F43nd1r</vendor>
+
+    <description>This Plugin provides correctness inspections for Kotlin DSL</description>
+
+    <!-- please see https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html
+         on how to target different products -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <localInspection
+                language="kotlin"
+                displayName="Missing mandatory DSL properties"
+                groupPath="Kotlin"
+                groupBundle="messages.InspectionsBundle"
+                groupKey="group.names.probable.bugs"
+                enabledByDefault="true"
+                level="ERROR"
+                implementationClass="com.faendir.kotlin.autodsl.inspections.DslInspection"/>
+    </extensions>
+
+    <actions>
+        <!-- Add your actions here -->
+    </actions>
+</idea-plugin>

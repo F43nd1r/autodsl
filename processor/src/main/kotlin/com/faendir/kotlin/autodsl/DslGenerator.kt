@@ -64,6 +64,7 @@ class DslGenerator(private val logger: KSPLogger, private val codeGenerator: Cod
             .addProperties(parameters.map { it.getProperty() })
             .addFunction(generateBuildFunction(clazz, parameters))
             .addFunctions(parameters.flatMap { it.additionalFunctions() })
+            .addAnnotation(DslInspect::class)
         if (markerType != annotationType) {
             classBuilder.addAnnotation(markerType.toClassName())
         }
@@ -74,6 +75,7 @@ class DslGenerator(private val logger: KSPLogger, private val codeGenerator: Cod
         return FunSpec.builder("build")
             .returns(clazz.toClassName())
             .apply {
+                parameters.filter { it.isMandatory }.forEach { addStatement("checkNotNull(%1L)·{ \"%1L must be assigned.\" }", it.name) }
                 if (parameters.any { it.hasDefault }) {
                     addCode(
                         "return %T::class.java.getConstructor(%L, %T::class.java, %T::class.java).newInstance(%L, %L, null)",

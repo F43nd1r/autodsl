@@ -9,3 +9,4 @@ rootProject.name = "autodsl-ksp"
 include("processor")
 include("annotations")
 include("sample")
+include("inspections")
