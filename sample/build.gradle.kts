@@ -1,19 +1,12 @@
 plugins {
-    kotlin("jvm")
+    kotlin
     id("com.google.devtools.ksp") version "1.5.0-RC-dev-experimental-20210417"
 }
 
 dependencies {
-    implementation(kotlin("stdlib-jdk8"))
     implementation(project(":annotations"))
     ksp(project(":processor"))
     testImplementation(kotlin("test-junit5"))
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
 }
 
 sourceSets {
