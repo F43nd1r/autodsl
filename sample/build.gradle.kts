@@ -1,6 +1,6 @@
 plugins {
     kotlin
-    id("com.google.devtools.ksp") version "1.5.0-RC-dev-experimental-20210417"
+    id("com.google.devtools.ksp") version "1.5.0-RC-dev-experimental-20210426"
 }
 
 dependencies {
