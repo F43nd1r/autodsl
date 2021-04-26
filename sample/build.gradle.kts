@@ -1,12 +1,13 @@
 plugins {
     kotlin
-    id("com.google.devtools.ksp") version "1.5.0-RC-dev-experimental-20210426"
+    id("com.google.devtools.ksp")
 }
 
 dependencies {
     implementation(project(":annotations"))
     ksp(project(":processor"))
     testImplementation(kotlin("test-junit5"))
+    testRuntime("org.junit.jupiter:junit-jupiter-engine:5.7.1")
 }
 
 sourceSets {

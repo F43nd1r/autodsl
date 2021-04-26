@@ -22,7 +22,6 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
-import kotlin.jvm.internal.DefaultConstructorMarker
 
 class DslGenerator(private val logger: KSPLogger, private val codeGenerator: CodeGenerator, private val resolver: Resolver) {
     private val annotationType = resolver.getClassDeclarationByName<Annotation>()!!.asStarProjectedType()
@@ -78,11 +77,11 @@ class DslGenerator(private val logger: KSPLogger, private val codeGenerator: Cod
                 parameters.filter { it.isMandatory }.forEach { addStatement("checkNotNull(%1L)·{ \"%1L must be assigned.\" }", it.name) }
                 if (parameters.any { it.hasDefault }) {
                     addCode(
-                        "return %T::class.java.getConstructor(%L, %T::class.java, %T::class.java).newInstance(%L, %L, null)",
+                        "return %T::class.java.getConstructor(%L, %T::class.java, Class.forName(%S)).newInstance(%L, %L, null)",
                         clazz.toClassName(),
                         parameters.map { it.getClassStatement() }.joinToCode(", "),
                         INT,
-                        DefaultConstructorMarker::class.asClassName(),
+                        "kotlin.jvm.internal.DefaultConstructorMarker",
                         parameters.map { it.getPassToConstructorStatement(false) }.joinToCode(", "),
                         DEFAULTS_BITFLAGS_FIELD_NAME
                     )

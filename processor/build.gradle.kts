@@ -4,8 +4,8 @@ plugins {
 }
 
 dependencies {
-    implementation("com.google.devtools.ksp:symbol-processing-api:1.5.0-RC-dev-experimental-20210426")
+    implementation("com.google.devtools.ksp:symbol-processing-api:${properties["kspVersion"]}")
     implementation(project(":annotations"))
-    implementation("com.squareup:kotlinpoet:1.8.0")
-    implementation("com.github.cesarferreira:kotlin-pluralizer:1.0.0")
+    implementation("com.squareup:kotlinpoet:${properties["kotlinPoetVersion"]}")
+    implementation("com.github.cesarferreira:kotlin-pluralizer:${properties["pluralizerVersion"]}")
 }

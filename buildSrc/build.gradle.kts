@@ -4,6 +4,7 @@ plugins {
 
 repositories {
     mavenCentral()
+    google()
     gradlePluginPortal()
 }
 
@@ -17,6 +18,8 @@ dependencies {
     implementation("gradle.plugin.fr.brouillard.oss.gradle:gradle-jgitver-plugin:$jgitverVersion")
     val nexusPublishVersion: String by project
     implementation("io.github.gradle-nexus:publish-plugin:$nexusPublishVersion")
+    val kspVersion: String by project
+    implementation("com.google.devtools.ksp:symbol-processing-gradle-plugin:$kspVersion")
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
