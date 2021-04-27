@@ -41,7 +41,10 @@ class Person(
     val name: String,
     val age: Int,
     val address: Address?,
-    val friends: List<Person> = emptyList()
+    val friends: List<Person> = emptyList(),
+    //in some cases you'll need to provide a valid singular form manually
+    @AutoDslSingular("clazz")
+    val classes: List<Person> = emptyList()
 )
 
 
@@ -77,15 +80,26 @@ For required parameters like `name` the DSL will throw an exception at runtime. 
  **Default values are supported!**
  
 ## Usage
-> Note: This project relies on kotlin 1.5 and KSP for 1.5, which isn't releases yet. You can't use this project unless you compile it and dependencies yourself. This chapter describes how using this project will work once it is released.
- 0. [Set up KSP](https://github.com/google/ksp/blob/master/docs/quickstart.md#use-your-own-processor-in-a-project)
 
  1. Add dependencies:
 
+settings.gradle.kts:
+```kotlin
+pluginManagement {
+    repositories {
+       gradlePluginPortal()
+       google() //required for ksp
+    }
+}
+```
+
 build.gradle.kts:
 ```kotlin
+plugins {
+    id("com.google.devtools.ksp") version "<latest ksp version>" //check https://github.com/google/ksp/releases
+}
 dependencies {
-    val autoDslVersion = "<latest version>"
+    val autoDslVersion = "<latest version>" //check https://github.com/F43nd1r/autodsl-ksp/releases
     implementation("com.faendir.kotlin.autodsl:annotations:$autoDslVersion")
     ksp("com.faendir.kotlin.autodsl:processor:$autoDslVersion")
 }
