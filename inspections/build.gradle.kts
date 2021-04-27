@@ -26,6 +26,10 @@ tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml
     )
 }
 
+tasks.withType<org.jetbrains.intellij.tasks.PublishTask> {
+    token(project.findProperty("intellijToken") as? String ?: System.getenv("INTELLIJ_TOKEN"))
+}
+
 tasks.register("publish") {
     dependsOn("publishPlugin")
 }
