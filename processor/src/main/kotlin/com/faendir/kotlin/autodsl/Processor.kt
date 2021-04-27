@@ -23,13 +23,13 @@ class Processor : SymbolProcessor {
     override fun process(resolver: Resolver): List<KSAnnotated> {
         this.resolver = resolver
         generator = DslGenerator(logger, codeGenerator, resolver)
-        for (clazz in resolver.getClassesWithAnnotation<AutoDsl>()) {
+        for (clazz in resolver.getClassesWithAnnotation(AutoDsl::class.java.name)) {
             processClass(clazz, clazz.getAnnotationTypeProperty(AutoDsl::dslMarker))
         }
         return emptyList()
     }
 
-    private fun processClass(clazz: KSClassDeclaration, markerType: KSType) {
+    private fun processClass(clazz: KSClassDeclaration, markerType: KSType?) {
         when (clazz.classKind) {
             ClassKind.INTERFACE -> logger.error("@AutoDsl can't be applied to $clazz: must not be an interface", clazz)
             ClassKind.ENUM_CLASS -> logger.error("@AutoDsl can't be applied to $clazz: must not be an enum class", clazz)

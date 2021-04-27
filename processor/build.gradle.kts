@@ -1,6 +1,7 @@
 plugins {
     kotlin
     `publish-maven`
+    testing
 }
 
 dependencies {

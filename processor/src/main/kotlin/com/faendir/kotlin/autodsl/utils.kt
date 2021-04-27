@@ -3,12 +3,7 @@ package com.faendir.kotlin.autodsl
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSAnnotation
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSFile
-import com.google.devtools.ksp.symbol.KSType
-import com.google.devtools.ksp.symbol.KSTypeReference
+import com.google.devtools.ksp.symbol.*
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
@@ -28,11 +23,11 @@ fun KSType.toTypeName(): TypeName {
 }
 
 fun KSType.toClassName(): ClassName {
-    return ClassName(declaration.packageName.asString(), declaration.simpleName.asString())
+    return ClassName(declaration.normalizedPackageName, declaration.simpleName.asString())
 }
 
 fun KSClassDeclaration.toClassName(): ClassName {
-    return ClassName(packageName.asString(), simpleName.asString())
+    return ClassName(normalizedPackageName, simpleName.asString())
 }
 
 fun FileSpec.writeTo(source: KSFile, codeGenerator: CodeGenerator) {
@@ -61,8 +56,12 @@ fun <T : Annotation> KSAnnotated.getAnnotation(annotation: KClass<T>): KSAnnotat
     return annotations.first { it.annotationType.resolve().declaration.qualifiedName!!.asString() == annotation.java.name }
 }
 
-inline fun <reified T : Annotation> KSAnnotated.getAnnotationTypeProperty(property: KProperty1<T, KClass<*>>): KSType {
-    return getAnnotation<T>().arguments.first { it.name?.asString() == property.name }.value as KSType
+inline fun <reified T : Annotation> KSAnnotated.getAnnotationTypeProperty(property: KProperty1<T, KClass<*>>): KSType? {
+    return getAnnotation<T>().arguments.first { it.name?.asString() == property.name }.value as? KSType?
+}
+
+inline fun <reified T : Annotation, R> KSAnnotated.getAnnotationProperty(property: KProperty1<T, R>): R {
+    return getAnnotation<T>().arguments.first { it.name?.asString() == property.name }.value as R
 }
 
 const val DEFAULTS_BITFLAGS_FIELD_NAME = "_defaultsBitFlags"
@@ -71,6 +70,7 @@ fun ClassName.withBuilderSuffix() = ClassName(packageName, "${simpleName}Builder
 
 fun TypeName.withBuilderSuffix() = toRawType().withBuilderSuffix()
 
-inline fun <reified T : Annotation> Resolver.getClassesWithAnnotation() = getClassesWithAnnotation(T::class.java.name)
-
 fun Resolver.getClassesWithAnnotation(name: String) = getSymbolsWithAnnotation(name).filterIsInstance<KSClassDeclaration>()
+
+val KSDeclaration.normalizedPackageName
+    get() = packageName.asString().takeIf { it != "<root>"} ?: ""

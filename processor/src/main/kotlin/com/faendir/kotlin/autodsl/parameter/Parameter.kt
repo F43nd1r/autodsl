@@ -7,11 +7,7 @@ import com.faendir.kotlin.autodsl.toNullable
 import com.faendir.kotlin.autodsl.toRawType
 import com.faendir.kotlin.autodsl.toTypeName
 import com.google.devtools.ksp.symbol.KSValueParameter
-import com.squareup.kotlinpoet.AnnotationSpec
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.*
 import kotlin.properties.Delegates
 
 abstract class Parameter(parameter: KSValueParameter, private val index: Int) {
@@ -23,7 +19,20 @@ abstract class Parameter(parameter: KSValueParameter, private val index: Int) {
 
     fun getClassStatement() = CodeBlock.of("%T::class.java", typeName.toRawType().toNonNull())
 
-    fun getPassToConstructorStatement(checkNullity: Boolean) = CodeBlock.of(if (!checkNullity || type.isMarkedNullable) "%L" else "%L!!", name)
+    fun getPassToConstructorStatement(checkNullity: Boolean) = CodeBlock.of(
+        when {
+            type.isMarkedNullable -> "%L"
+            checkNullity -> "%L!!"
+            typeName == BOOLEAN -> "%L ?: false"
+            typeName == BYTE -> "%L ?: 0"
+            typeName == SHORT -> "%L ?: 0"
+            typeName == INT -> "%L ?: 0"
+            typeName == LONG -> "%L ?: 0"
+            typeName == CHAR -> "%L ?: '\\u0000'"
+            typeName == FLOAT -> "%L ?: 0.0f"
+            typeName == DOUBLE -> "%L ?: 0.0"
+            else -> "%L"
+        }, name)
 
     fun getProperty(): PropertySpec {
         val builder = PropertySpec.builder(name, typeName.toNullable())
