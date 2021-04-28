@@ -1,23 +1,21 @@
 package com.faendir.kotlin.autodsl.parameter
 
-import com.faendir.kotlin.autodsl.DEFAULTS_BITFLAGS_FIELD_NAME
-import com.faendir.kotlin.autodsl.DslMandatory
-import com.faendir.kotlin.autodsl.toNonNull
-import com.faendir.kotlin.autodsl.toNullable
-import com.faendir.kotlin.autodsl.toRawType
-import com.faendir.kotlin.autodsl.toTypeName
+import com.faendir.kotlin.autodsl.*
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.squareup.kotlinpoet.*
+import io.github.enjoydambience.kotlinbard.addAnnotation
+import io.github.enjoydambience.kotlinbard.buildProperty
+import io.github.enjoydambience.kotlinbard.nullable
 import kotlin.properties.Delegates
 
 abstract class Parameter(parameter: KSValueParameter, private val index: Int) {
     val type = parameter.type.resolve()
-    val typeName = type.toTypeName()
+    val typeName = type.asTypeName()
     val name = parameter.name?.asString() ?: "var$index"
     val hasDefault = parameter.hasDefault
     val isMandatory = !hasDefault && !typeName.isNullable
 
-    fun getClassStatement() = CodeBlock.of("%T::class.java", typeName.toRawType().toNonNull())
+    fun getClassStatement() = CodeBlock.of("%T::class.java", typeName.toRawType().nonnull)
 
     fun getPassToConstructorStatement(checkNullity: Boolean) = CodeBlock.of(
         when {
@@ -32,21 +30,22 @@ abstract class Parameter(parameter: KSValueParameter, private val index: Int) {
             typeName == FLOAT -> "%L ?: 0.0f"
             typeName == DOUBLE -> "%L ?: 0.0"
             else -> "%L"
-        }, name)
+        }, name
+    )
 
-    fun getProperty(): PropertySpec {
-        val builder = PropertySpec.builder(name, typeName.toNullable())
-            .mutable(true)
-            .delegate(
-                "%1T.observable(null)·{·_, _, _·-> %2L = %2L and %3L }",
-                Delegates::class.asClassName(),
-                DEFAULTS_BITFLAGS_FIELD_NAME,
-                (1 shl index).inv()
-            )
-        if(isMandatory) {
-            builder.addAnnotation(AnnotationSpec.builder(DslMandatory::class).useSiteTarget(AnnotationSpec.UseSiteTarget.SET).build())
+    fun getProperty(): PropertySpec = buildProperty(name, typeName.nullable) {
+        mutable(true)
+        delegate(
+            "%1T.observable(null)·{·_, _, _·-> %2L = %2L and %3L }",
+            Delegates::class.asClassName(),
+            DEFAULTS_BITFLAGS_FIELD_NAME,
+            (1 shl index).inv()
+        )
+        if (isMandatory) {
+            addAnnotation(DslMandatory::class) {
+                useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
+            }
         }
-        return builder.build()
     }
 
     open fun additionalFunctions() = emptyList<FunSpec>()

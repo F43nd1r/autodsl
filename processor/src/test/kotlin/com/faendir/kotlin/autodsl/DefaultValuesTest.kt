@@ -14,9 +14,9 @@ class DefaultValuesTest {
             """,
             """
                 import strikt.api.expectThat
-                import strikt.assertions.isEqualTo
+                import strikt.assertions.com.faendir.kotlin.autodsl.isEqualTo
                 fun test() {
-                    expectThat(entity {}.a).isEqualTo("Hi")
+                    expectThat(entity {}.a).com.faendir.kotlin.autodsl.isEqualTo("Hi")
                 }
             """
         )
@@ -40,17 +40,17 @@ class DefaultValuesTest {
             """,
             """
                 import strikt.api.expectThat
-                import strikt.assertions.isEqualTo
+                import strikt.assertions.com.faendir.kotlin.autodsl.isEqualTo
                 fun test() {
                     expectThat(entity {}){
-                        get(Entity::a).isEqualTo(true)
-                        get(Entity::b).isEqualTo(1)
-                        get(Entity::c).isEqualTo(2)
-                        get(Entity::d).isEqualTo(3)
-                        get(Entity::e).isEqualTo(4L)
-                        get(Entity::f).isEqualTo('X')
-                        get(Entity::g).isEqualTo(5.0f)
-                        get(Entity::h).isEqualTo(6.0)
+                        get(Entity::a).com.faendir.kotlin.autodsl.isEqualTo(true)
+                        get(Entity::b).com.faendir.kotlin.autodsl.isEqualTo(1)
+                        get(Entity::c).com.faendir.kotlin.autodsl.isEqualTo(2)
+                        get(Entity::d).com.faendir.kotlin.autodsl.isEqualTo(3)
+                        get(Entity::e).com.faendir.kotlin.autodsl.isEqualTo(4L)
+                        get(Entity::f).com.faendir.kotlin.autodsl.isEqualTo('X')
+                        get(Entity::g).com.faendir.kotlin.autodsl.isEqualTo(5.0f)
+                        get(Entity::h).com.faendir.kotlin.autodsl.isEqualTo(6.0)
                     }
                 }
             """
@@ -67,11 +67,11 @@ class DefaultValuesTest {
             """,
             """
                 import strikt.api.expectThat
-                import strikt.assertions.isEqualTo
+                import strikt.assertions.com.faendir.kotlin.autodsl.isEqualTo
                 fun test() {
                     expectThat(entity {
                         a = "a"
-                    }.b).isEqualTo("Hi")
+                    }.b).com.faendir.kotlin.autodsl.isEqualTo("Hi")
                 }
             """
         )
@@ -87,11 +87,11 @@ class DefaultValuesTest {
             """,
             """
                 import strikt.api.expectThat
-                import strikt.assertions.isEqualTo
+                import strikt.assertions.com.faendir.kotlin.autodsl.isEqualTo
                 fun test() {
                     expectThat(entity {
                         b = "b"
-                    }.a).isEqualTo("Hi")
+                    }.a).com.faendir.kotlin.autodsl.isEqualTo("Hi")
                 }
             """
         )

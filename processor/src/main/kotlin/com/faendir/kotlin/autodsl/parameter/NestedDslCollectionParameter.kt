@@ -5,8 +5,7 @@ import com.cesarferreira.pluralize.utils.Plurality
 import com.faendir.kotlin.autodsl.*
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.LambdaTypeName
-import com.squareup.kotlinpoet.asClassName
+import io.github.enjoydambience.kotlinbard.buildFunction
 
 open class NestedDslCollectionParameter(
     private val parameter: KSValueParameter,
@@ -14,27 +13,21 @@ open class NestedDslCollectionParameter(
     private val createFunction: String
 ) :
     Parameter(parameter, index) {
-    override fun additionalFunctions(): List<FunSpec> {
-        val dslType = type.arguments.first().type!!.toTypeName()
-        val builderType = dslType.withBuilderSuffix()
-        val funName = when {
+    override fun additionalFunctions(): List<FunSpec> = listOf(buildFunction(
+        when {
             parameter.hasAnnotation<AutoDslSingular>() -> parameter.getAnnotationProperty(AutoDslSingular::value)
             name.length < 3 -> name
             else -> name.singularize(Plurality.CouldBeEither)
         }
-        return listOf(
-            FunSpec.builder(funName)
-                .addParameter(
-                    "initializer",
-                    LambdaTypeName.get(receiver = builderType, returnType = Unit::class.asClassName())
-                )
-                .addStatement("val result = %T().apply(initializer).build()", builderType)
-                .addStatement("%1L = %1L?.plus(result) ?: %2L(result)", name, createFunction)
-                .addStatement("return result")
-                .returns(dslType.toNonNull())
-                .build()
-        )
-    }
+    ) {
+        val dslType = type.arguments.first().type!!.asTypeName()
+        val builderType = dslType.withBuilderSuffix()
+        addParameter("initializer", builderType.asLambdaReceiver())
+        addStatement("val result = %T().apply(initializer).build()", builderType)
+        addStatement("%1L = %1L?.plus(result) ?: %2L(result)", name, createFunction)
+        addStatement("return result")
+        returns(dslType.nonnull)
+    })
 }
 
 class NestedDslListParameter(parameter: KSValueParameter, index: Int) :
