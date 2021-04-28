@@ -31,7 +31,7 @@ fun KSClassDeclaration.toClassName(): ClassName {
 }
 
 fun FileSpec.writeTo(source: KSFile, codeGenerator: CodeGenerator) {
-    codeGenerator.createNewFile(Dependencies(true, source), packageName, name).writer().use { writeTo(it) }
+    codeGenerator.createNewFile(Dependencies(false, source), packageName, name).writer().use { writeTo(it) }
 }
 
 fun TypeName.toNullable() = copy(true)
@@ -44,16 +44,33 @@ fun TypeName.toRawType(): ClassName = when (this) {
     else -> throw IllegalArgumentException()
 }
 
+/**
+ * Light check without type resolution. A positive result does not guarantee equality
+ *
+ * @return false if this is not equal to annotation
+ */
+fun <T : Annotation> KSAnnotation.couldBe(annotation: KClass<T>) =
+    (annotationType.element as? KSClassifierReference)?.referencedName() == annotation.simpleName
+
+
+/**
+ * Heavy check with type resolution
+ *
+ * @return true if this is equal to annotation
+ */
+fun <T : Annotation> KSAnnotation.isEqualTo(annotation: KClass<T>) =
+    annotationType.resolve().declaration.qualifiedName?.asString() == annotation.java.name
+
 inline fun <reified T : Annotation> KSAnnotated.hasAnnotation() = hasAnnotation(T::class)
 
 fun <T : Annotation> KSAnnotated.hasAnnotation(annotation: KClass<T>): Boolean {
-    return annotations.any { it.annotationType.resolve().declaration.qualifiedName!!.asString() == annotation.java.name }
+    return annotations.filter { it.couldBe(annotation) }.any { it.isEqualTo(annotation) }
 }
 
 inline fun <reified T : Annotation> KSAnnotated.getAnnotation() = getAnnotation(T::class)
 
 fun <T : Annotation> KSAnnotated.getAnnotation(annotation: KClass<T>): KSAnnotation {
-    return annotations.first { it.annotationType.resolve().declaration.qualifiedName!!.asString() == annotation.java.name }
+    return annotations.filter { it.couldBe(annotation) }.first { it.isEqualTo(annotation) }
 }
 
 inline fun <reified T : Annotation> KSAnnotated.getAnnotationTypeProperty(property: KProperty1<T, KClass<*>>): KSType? {
@@ -70,7 +87,8 @@ fun ClassName.withBuilderSuffix() = ClassName(packageName, "${simpleName}Builder
 
 fun TypeName.withBuilderSuffix() = toRawType().withBuilderSuffix()
 
-fun Resolver.getClassesWithAnnotation(name: String) = getSymbolsWithAnnotation(name).filterIsInstance<KSClassDeclaration>()
+fun Resolver.getClassesWithAnnotation(name: String) =
+    getSymbolsWithAnnotation(name).filterIsInstance<KSClassDeclaration>()
 
 val KSDeclaration.normalizedPackageName
-    get() = packageName.asString().takeIf { it != "<root>"} ?: ""
+    get() = packageName.asString().takeIf { it != "<root>" } ?: ""

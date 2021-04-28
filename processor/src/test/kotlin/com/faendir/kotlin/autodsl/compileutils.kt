@@ -28,7 +28,7 @@ fun compile(@Language("kotlin") source: String, @Language("kotlin") eval: String
         inheritClassPath = true
         jvmTarget = "1.8"
         sources = listOf(kotlin("Source.kt", source))
-        symbolProcessors = listOf(Processor())
+        symbolProcessors = listOf(Processor(null, null, null, null))
     }
     val pass1 = compilation.compile()
     expectThat(pass1).get(KotlinCompilation.Result::exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)

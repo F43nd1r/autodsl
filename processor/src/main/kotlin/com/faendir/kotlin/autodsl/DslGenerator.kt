@@ -10,6 +10,8 @@ import com.google.devtools.ksp.isPublic
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.symbol.ClassKind
+import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.squareup.kotlinpoet.ClassName
@@ -27,7 +29,27 @@ class DslGenerator(private val logger: KSPLogger, private val codeGenerator: Cod
     private val annotationType = resolver.getClassDeclarationByName<Annotation>()!!.asStarProjectedType()
     private val parameterFactory = ParameterFactory(resolver)
 
-    fun generate(clazz: KSClassDeclaration, markerType: KSType?) {
+
+    fun process() {
+        for (clazz in resolver.getClassesWithAnnotation(AutoDsl::class.java.name)) {
+            processClass(clazz, clazz.getAnnotationTypeProperty(AutoDsl::dslMarker))
+        }
+    }
+
+    private fun processClass(clazz: KSClassDeclaration, markerType: KSType?) {
+        when (clazz.classKind) {
+            ClassKind.INTERFACE -> logger.error("@AutoDsl can't be applied to $clazz: must not be an interface", clazz)
+            ClassKind.ENUM_CLASS -> logger.error("@AutoDsl can't be applied to $clazz: must not be an enum class", clazz)
+            ClassKind.ENUM_ENTRY -> logger.error("@AutoDsl can't be applied to $clazz: must not be an enum entry", clazz)
+            ClassKind.OBJECT -> logger.error("@AutoDsl can't be applied to $clazz: must not be an object", clazz)
+            ClassKind.ANNOTATION_CLASS -> for (c in resolver.getClassesWithAnnotation(clazz.qualifiedName!!.asString())) {
+                processClass(c, markerType)
+            }
+            ClassKind.CLASS -> generate(clazz, markerType)
+        }
+    }
+
+    private fun generate(clazz: KSClassDeclaration, markerType: KSType?) {
         if (clazz.isAbstract()) {
             logger.error("@AutoDsl can't be applied to $clazz: must not be abstract", clazz)
             return
