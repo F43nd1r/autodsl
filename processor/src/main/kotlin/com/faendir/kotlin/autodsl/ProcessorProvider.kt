@@ -12,6 +12,6 @@ class ProcessorProvider : SymbolProcessorProvider {
         codeGenerator: CodeGenerator,
         logger: KSPLogger
     ): SymbolProcessor {
-        return Processor(null, null, null, null)
+        return Processor(codeGenerator, logger)
     }
 }
