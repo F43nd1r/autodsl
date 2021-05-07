@@ -94,13 +94,17 @@ class DslGenerator(
                     returns(clazz.asClassName())
                     parameters.filter { it.isMandatory }.forEach { addStatement("checkNotNull(%1L)·{ \"%1L must be assigned.\" }", it.name) }
                     if (parameters.any { it.hasDefault }) {
-                        val markerExpression = if (kotlinVersion.isAtLeast(1, 5)) "%T::class.java" else "Class.forName(%S)"
+                        val (markerExpression, markerParameter) = if (kotlinVersion.isAtLeast(1, 5)) {
+                            "%T::class.java" to DefaultConstructorMarker::class.asClassName()
+                        } else {
+                            "Class.forName(%S)" to DefaultConstructorMarker::class.java.name
+                        }
                         addStatement(
                             "return %T::class.java.getConstructor(%L, %T::class.java, $markerExpression).newInstance(%L, %L, null)",
                             clazz.asClassName(),
                             parameters.map { it.getClassStatement() }.joinToCode(", "),
                             INT,
-                            DefaultConstructorMarker::class.asClassName(),
+                            markerParameter,
                             parameters.map { it.getPassToConstructorStatement(false) }.joinToCode(", "),
                             DEFAULTS_BITFLAGS_FIELD_NAME
                         )

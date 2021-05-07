@@ -98,6 +98,13 @@ build.gradle.kts:
 plugins {
     id("com.google.devtools.ksp") version "<latest ksp version>" //check https://github.com/google/ksp/releases
 }
+
+repositories {
+    mavenCentral()
+    google()
+    maven { setUrl("https://jitpack.io") }
+}
+
 dependencies {
     val autoDslVersion = "<latest version>" //check https://github.com/F43nd1r/autodsl-ksp/releases
     implementation("com.faendir.kotlin.autodsl:annotations:$autoDslVersion")
