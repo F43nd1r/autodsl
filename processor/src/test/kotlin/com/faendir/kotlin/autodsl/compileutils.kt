@@ -3,7 +3,7 @@ package com.faendir.kotlin.autodsl
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.SourceFile.Companion.kotlin
-import com.tschuchort.compiletesting.symbolProcessors
+import com.tschuchort.compiletesting.symbolProcessorProviders
 import org.intellij.lang.annotations.Language
 import strikt.api.expectThat
 import strikt.assertions.isEqualTo
@@ -28,7 +28,7 @@ fun compile(@Language("kotlin") source: String, @Language("kotlin") eval: String
         inheritClassPath = true
         jvmTarget = "1.8"
         sources = listOf(kotlin("Source.kt", source))
-        symbolProcessors = listOf(Processor(null, null, null, null))
+        symbolProcessorProviders = listOf(ProcessorProvider())
     }
     val pass1 = compilation.compile()
     expectThat(pass1).get(KotlinCompilation.Result::exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)

@@ -11,15 +11,18 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
 import io.github.enjoydambience.kotlinbard.addClass
 import io.github.enjoydambience.kotlinbard.addFunction
 import io.github.enjoydambience.kotlinbard.addProperty
 import io.github.enjoydambience.kotlinbard.buildFile
+import kotlin.jvm.internal.DefaultConstructorMarker
 
 const val DEFAULTS_BITFLAGS_FIELD_NAME = "_defaultsBitFlags"
 
 class DslGenerator(
+    private val kotlinVersion: KotlinVersion,
     private val logger: KSPLogger,
     private val codeGenerator: CodeGenerator,
     private val resolver: Resolver
@@ -91,12 +94,13 @@ class DslGenerator(
                     returns(clazz.asClassName())
                     parameters.filter { it.isMandatory }.forEach { addStatement("checkNotNull(%1L)·{ \"%1L must be assigned.\" }", it.name) }
                     if (parameters.any { it.hasDefault }) {
+                        val markerExpression = if (kotlinVersion.isAtLeast(1, 5)) "%T::class.java" else "Class.forName(%S)"
                         addStatement(
-                            "return %T::class.java.getConstructor(%L, %T::class.java, Class.forName(%S)).newInstance(%L, %L, null)",
+                            "return %T::class.java.getConstructor(%L, %T::class.java, $markerExpression).newInstance(%L, %L, null)",
                             clazz.asClassName(),
                             parameters.map { it.getClassStatement() }.joinToCode(", "),
                             INT,
-                            "kotlin.jvm.internal.DefaultConstructorMarker",
+                            DefaultConstructorMarker::class.asClassName(),
                             parameters.map { it.getPassToConstructorStatement(false) }.joinToCode(", "),
                             DEFAULTS_BITFLAGS_FIELD_NAME
                         )

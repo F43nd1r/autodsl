@@ -15,13 +15,13 @@ class NestingTest {
             """,
             """
                 import strikt.api.expectThat
-                import strikt.assertions.com.faendir.kotlin.autodsl.isEqualTo
+                import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
                         a {
                             b = "Hi"
                         }
-                    }.a.b).com.faendir.kotlin.autodsl.isEqualTo("Hi")
+                    }.a.b).isEqualTo("Hi")
                 }
             """
         )
@@ -41,7 +41,7 @@ class NestingTest {
             """,
             """
                 import strikt.api.expectThat
-                import strikt.assertions.com.faendir.kotlin.autodsl.isEqualTo
+                import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
                         a {
@@ -49,7 +49,7 @@ class NestingTest {
                                 c = "Hi"
                             }
                         }
-                    }.a.b.c).com.faendir.kotlin.autodsl.isEqualTo("Hi")
+                    }.a.b.c).isEqualTo("Hi")
                 }
             """
         )
