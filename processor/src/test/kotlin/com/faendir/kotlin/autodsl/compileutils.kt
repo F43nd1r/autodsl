@@ -23,7 +23,11 @@ private fun File.collectSourceFiles(): List<SourceFile> {
     }.toList()
 }
 
-fun compile(@Language("kotlin") source: String, @Language("kotlin") eval: String): KotlinCompilation.Result {
+fun compile(
+    @Language("kotlin") source: String,
+    @Language("kotlin") eval: String = "fun test() { }",
+    expect: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK
+): KotlinCompilation.Result {
     val compilation = KotlinCompilation().apply {
         inheritClassPath = true
         jvmTarget = "1.8"
@@ -31,7 +35,7 @@ fun compile(@Language("kotlin") source: String, @Language("kotlin") eval: String
         symbolProcessorProviders = listOf(ProcessorProvider())
     }
     val pass1 = compilation.compile()
-    expectThat(pass1).get(KotlinCompilation.Result::exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+    expectThat(pass1).get(KotlinCompilation.Result::exitCode).isEqualTo(expect)
     val pass2 = KotlinCompilation().apply {
         inheritClassPath = true
         jvmTarget = "1.8"

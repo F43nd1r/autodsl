@@ -36,7 +36,7 @@ class DslGenerator(
 
 
     fun process(): List<KSAnnotated> {
-        return resolver.getClassesWithAnnotation(AutoDsl::class.java.name).flatMap { processClass(it, it.getAnnotationTypeProperty(AutoDsl::dslMarker)) }
+        return resolver.getClassesWithAnnotation(AutoDsl::class.java.name).flatMap { processClass(it, it.getAnnotationTypeProperty(AutoDsl::dslMarker)) }.toList()
     }
 
     private fun processClass(clazz: KSClassDeclaration, markerType: KSType?): List<KSAnnotated> {
@@ -46,7 +46,7 @@ class DslGenerator(
             ClassKind.ENUM_ENTRY -> error("must not be an enum entry", clazz)
             ClassKind.OBJECT -> error("must not be an object", clazz)
             ClassKind.ANNOTATION_CLASS -> {
-                val deferred = resolver.getClassesWithAnnotation(clazz.qualifiedName!!.asString()).flatMap { processClass(it, markerType) }
+                val deferred = resolver.getClassesWithAnnotation(clazz.qualifiedName!!.asString()).flatMap { processClass(it, markerType) }.toList()
                 if (deferred.isNotEmpty()) {
                     return deferred + clazz
                 }
@@ -69,7 +69,7 @@ class DslGenerator(
             return false
         }
         val constructors = clazz.getConstructors().filter { it.isPublic() || it.isInternal() }
-        if (constructors.isEmpty()) {
+        if (constructors.none()) {
             error("must have at least one public or internal constructor", clazz)
             return false
         }
