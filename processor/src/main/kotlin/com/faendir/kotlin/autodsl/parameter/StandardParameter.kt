@@ -1,5 +1,6 @@
 package com.faendir.kotlin.autodsl.parameter
 
-import com.google.devtools.ksp.symbol.KSValueParameter
+import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.TypeName
 
-class StandardParameter(parameter: KSValueParameter, index: Int) : Parameter(parameter, index)
+class StandardParameter(typeName: TypeName, name: String, hasDefault: Boolean, index: Int) : Parameter(typeName, name, hasDefault, index)

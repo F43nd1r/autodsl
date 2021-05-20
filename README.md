@@ -3,8 +3,7 @@
 Auto-generates [DSL (Domain Specific Language)](https://en.wikipedia.org/wiki/Domain-specific_language)
 for your Kotlin projects using annotations.
 
-Inspired by [AutoDsl](https://github.com/juanchosaravia/autodsl), which is implemented for kapt. This project does a similar thing with [Kotlin Symbol
-Processing (KSP)](https://github.com/google/ksp).
+Inspired by [AutoDsl](https://github.com/juanchosaravia/autodsl), which is no longer maintained.
 
 ## Documentation
 
@@ -77,11 +76,15 @@ AutoDsl will be generating a builder class and extension function for the annota
 
 For required parameters like `name` the DSL will throw an exception at runtime. To make it optional just set the property as nullable with the question mark like `address`, or provide a default value like `friends`. The value will be null in case it's not set.
 
+For inspections on required parameters use [this IntelliJ plugin](https://plugins.jetbrains.com/plugin/16644-kotlin-autodsl-inspections).
+
  **Default values are supported!**
  
 ## Usage
 
- 1. Add dependencies:
+You can use either ksp or kapt to run this processor. See [here](https://github.com/google/ksp/blob/main/docs/why-ksp.md#comparison-to-kapt) for a comparison of ksp and kapt.
+
+ 1.a) Add dependencies ([Kotlin Symbol Processing (KSP)](https://github.com/google/ksp)):
 
 settings.gradle.kts:
 ```kotlin
@@ -102,7 +105,6 @@ plugins {
 repositories {
     mavenCentral()
     google()
-    maven { setUrl("https://jitpack.io") }
 }
 
 dependencies {
@@ -111,6 +113,27 @@ dependencies {
     ksp("com.faendir.kotlin.autodsl:processor:$autoDslVersion")
 }
 ```
+
+ 1.b) Add dependencies ([KAPT](https://kotlinlang.org/docs/kapt.html)):
+
+build.gradle.kts:
+```kotlin
+plugins {
+    kotlin("kapt") version "1.5.0"
+}
+
+repositories {
+    mavenCentral()
+    google()
+}
+
+dependencies {
+    val autoDslVersion = "<latest version>" //check https://github.com/F43nd1r/autodsl-ksp/releases
+    implementation("com.faendir.kotlin.autodsl:annotations:$autoDslVersion")
+    kapt("com.faendir.kotlin.autodsl:processor:$autoDslVersion")
+}
+```
+
  2. Add `@AutoDsl` to your classes and build your project
 
  3. Enjoy your new DSL!

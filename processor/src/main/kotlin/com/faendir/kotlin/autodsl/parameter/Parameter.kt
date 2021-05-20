@@ -1,25 +1,23 @@
 package com.faendir.kotlin.autodsl.parameter
 
-import com.faendir.kotlin.autodsl.*
-import com.google.devtools.ksp.symbol.KSValueParameter
+import com.faendir.kotlin.autodsl.DEFAULTS_BITFLAGS_FIELD_NAME
+import com.faendir.kotlin.autodsl.DslMandatory
+import com.faendir.kotlin.autodsl.nonnull
+import com.faendir.kotlin.autodsl.toRawType
 import com.squareup.kotlinpoet.*
 import io.github.enjoydambience.kotlinbard.addAnnotation
 import io.github.enjoydambience.kotlinbard.buildProperty
 import io.github.enjoydambience.kotlinbard.nullable
 import kotlin.properties.Delegates
 
-abstract class Parameter(parameter: KSValueParameter, private val index: Int) {
-    val type = parameter.type.resolve()
-    val typeName = type.asTypeName()
-    val name = parameter.name?.asString() ?: "var$index"
-    val hasDefault = parameter.hasDefault
+abstract class Parameter(val typeName: TypeName, val name: String, val hasDefault: Boolean, private val index: Int) {
     val isMandatory = !hasDefault && !typeName.isNullable
 
     fun getClassStatement() = CodeBlock.of("%T::class.java", typeName.toRawType().nonnull)
 
     fun getPassToConstructorStatement(checkNullity: Boolean) = CodeBlock.of(
         when {
-            type.isMarkedNullable -> "%L"
+            typeName.isNullable -> "%L"
             checkNullity -> "%L!!"
             typeName == BOOLEAN -> "%L ?: false"
             typeName == BYTE -> "%L ?: 0"

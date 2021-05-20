@@ -1,3 +1,7 @@
+plugins {
+    jacoco
+}
+
 dependencies {
     "testImplementation"(kotlin("test-junit5"))
     "testImplementation"("org.junit.jupiter:junit-jupiter-engine:${properties["junitVersion"]}")
@@ -8,4 +12,9 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    finalizedBy("jacocoTestReport")
+}
+
+jacoco {
+    toolVersion = "0.8.7"
 }

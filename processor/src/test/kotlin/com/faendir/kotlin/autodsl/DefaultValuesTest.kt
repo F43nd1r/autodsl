@@ -1,31 +1,28 @@
 package com.faendir.kotlin.autodsl
 
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 
 class DefaultValuesTest {
 
-    @Test
-    fun `default value`() {
-        compile(
-            """
+    @TestFactory
+    fun `default value`() = compile(
+        """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(val a: String = "Hi")
             """,
-            """
+        """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {}.a).isEqualTo("Hi")
                 }
             """
-        )
-    }
+    )
 
-    @Test
-    fun `primitive default value`() {
-        compile(
-            """
+    @TestFactory
+    fun `primitive default value`() = compile(
+        """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(
@@ -38,7 +35,7 @@ class DefaultValuesTest {
                     val g: Float = 5.0f,
                     val h: Double = 6.0)
             """,
-            """
+        """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -54,18 +51,16 @@ class DefaultValuesTest {
                     }
                 }
             """
-        )
-    }
+    )
 
-    @Test
-    fun `default value after required`() {
-        compile(
-            """
+    @TestFactory
+    fun `default value after required`() = compile(
+        """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(val a: String, val b: String = "Hi")
             """,
-            """
+        """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -74,18 +69,16 @@ class DefaultValuesTest {
                     }.b).isEqualTo("Hi")
                 }
             """
-        )
-    }
+    )
 
-    @Test
-    fun `default value before required`() {
-        compile(
-            """
+    @TestFactory
+    fun `default value before required`() = compile(
+        """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(val a: String = "Hi", val b: String)
             """,
-            """
+        """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -94,6 +87,5 @@ class DefaultValuesTest {
                     }.a).isEqualTo("Hi")
                 }
             """
-        )
-    }
+    )
 }

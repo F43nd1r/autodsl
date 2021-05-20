@@ -1,19 +1,18 @@
 package com.faendir.kotlin.autodsl
 
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 
 class NestingTest {
-    @Test
-    fun `basic nesting`() {
-        compile(
-            """
+    @TestFactory
+    fun `basic nesting`() = compile(
+        """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(val a: Entity2)
                 @AutoDsl
                 class Entity2(val b: String)
             """,
-            """
+        """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -24,13 +23,11 @@ class NestingTest {
                     }.a.b).isEqualTo("Hi")
                 }
             """
-        )
-    }
+    )
 
-    @Test
-    fun `deep nesting`() {
-        compile(
-            """
+    @TestFactory
+    fun `deep nesting`() = compile(
+        """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(val a: Entity2)
@@ -39,7 +36,7 @@ class NestingTest {
                 @AutoDsl
                 class Entity3(val c: String)
             """,
-            """
+        """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -52,20 +49,18 @@ class NestingTest {
                     }.a.b.c).isEqualTo("Hi")
                 }
             """
-        )
-    }
+    )
 
-    @Test
-    fun `collection nesting`() {
-        compile(
-            """
+    @TestFactory
+    fun `collection nesting`() = compile(
+        """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(val a: List<Entity2>, val b: Collection<Entity2>, val c: Set<Entity2>)
                 @AutoDsl
                 data class Entity2(val d: String)
             """,
-            """
+        """
                 import strikt.api.expectThat
                 import strikt.assertions.isA
                 import strikt.assertions.containsExactly
@@ -99,13 +94,11 @@ class NestingTest {
                     }
                 }
             """
-        )
-    }
+    )
 
-    @Test
-    fun `automatic singularization`() {
-        compile(
-            """
+    @TestFactory
+    fun `automatic singularization`() = compile(
+        """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(
@@ -117,7 +110,7 @@ class NestingTest {
                 @AutoDsl
                 data class Entity2(val a: String)
             """,
-            """
+        """
                 fun test() {
                     entity {
                         friend {
@@ -135,13 +128,11 @@ class NestingTest {
                     }
                 }
             """
-        )
-    }
+    )
 
-    @Test
-    fun `manual singularization`() {
-        compile(
-            """
+    @TestFactory
+    fun `manual singularization`() = compile(
+        """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 import com.faendir.kotlin.autodsl.AutoDslSingular
                 @AutoDsl
@@ -149,7 +140,7 @@ class NestingTest {
                 @AutoDsl
                 data class Entity2(val a: String)
             """,
-            """
+        """
                 fun test() {
                     entity {
                         clazz {
@@ -158,6 +149,5 @@ class NestingTest {
                     }
                 }
             """
-        )
-    }
+    )
 }

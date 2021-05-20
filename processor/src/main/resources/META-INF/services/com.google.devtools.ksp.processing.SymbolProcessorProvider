@@ -1,1 +1,1 @@
-com.faendir.kotlin.autodsl.ProcessorProvider
+com.faendir.kotlin.autodsl.ksp.KspProcessorProvider

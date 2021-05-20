@@ -5,7 +5,7 @@ pluginManagement {
         mavenLocal()
     }
 }
-rootProject.name = "autodsl-ksp"
+rootProject.name = "autodsl"
 include("processor")
 include("annotations")
 include("sample")
