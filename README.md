@@ -1,4 +1,4 @@
-# AutoDSL for Kotlin (KSP)
+# AutoDSL for Kotlin
 
 Auto-generates [DSL (Domain Specific Language)](https://en.wikipedia.org/wiki/Domain-specific_language)
 for your Kotlin projects using annotations.
