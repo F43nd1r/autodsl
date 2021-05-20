@@ -128,7 +128,7 @@ repositories {
 }
 
 dependencies {
-    val autoDslVersion = "<latest version>" //check https://github.com/F43nd1r/autodsl-ksp/releases
+    val autoDslVersion = "<latest version>" //check https://github.com/F43nd1r/autodsl/releases
     implementation("com.faendir.kotlin.autodsl:annotations:$autoDslVersion")
     kapt("com.faendir.kotlin.autodsl:processor:$autoDslVersion")
 }
