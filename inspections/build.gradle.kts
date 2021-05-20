@@ -21,6 +21,9 @@ tasks.runIde {
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes(
         """
+        <b>v2.0</b>
+        Updated for autodsl 2.0
+        <b>v1.0</b>
         Initial Release
         """
     )

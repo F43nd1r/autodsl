@@ -33,13 +33,13 @@ publishing {
             artifact(javadocJar)
 
             pom {
-                name.set("AutoDsl KSP")
+                name.set("AutoDsl")
                 description.set("Auto-generates DSL for your Kotlin projects using annotations.")
-                url.set("https://github.com/F43nd1r/autodsl-ksp")
+                url.set("https://github.com/F43nd1r/autodsl")
                 scm {
-                    connection.set("scm:git:https://github.com/F43nd1r/autodsl-ksp.git")
-                    developerConnection.set("scm:git:git@github.com:F43nd1r/autodsl-ksp.git")
-                    url.set("https://github.com/F43nd1r/autodsl-ksp.git")
+                    connection.set("scm:git:https://github.com/F43nd1r/autodsl.git")
+                    developerConnection.set("scm:git:git@github.com:F43nd1r/autodsl.git")
+                    url.set("https://github.com/F43nd1r/autodsl.git")
                 }
                 licenses {
                     license {
@@ -61,7 +61,7 @@ publishing {
         mavenLocal()
         maven {
             name = "GithubPackages"
-            url = uri("https://maven.pkg.github.com/F43nd1r/autodsl-ksp")
+            url = uri("https://maven.pkg.github.com/F43nd1r/autodsl")
             credentials {
                 username = project.findProperty("githubUser") as? String ?: System.getenv("GITHUB_USER")
                 password = project.findProperty("githubPackageKey") as? String ?: System.getenv("GITHUB_TOKEN")
