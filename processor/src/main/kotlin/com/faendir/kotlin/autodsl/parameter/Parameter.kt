@@ -34,7 +34,7 @@ abstract class Parameter(val typeName: TypeName, val name: String, val hasDefaul
     fun getProperty(): PropertySpec = buildProperty(name, typeName.nullable) {
         mutable(true)
         delegate(
-            "%1T.observable(null)·{·_, _, _·-> %2L = %2L and %3L }",
+            "%1T.observable(null)·{·_, _, _·-> %2L·= %2L and %3L }",
             Delegates::class.asClassName(),
             DEFAULTS_BITFLAGS_FIELD_NAME,
             (1 shl index).inv()

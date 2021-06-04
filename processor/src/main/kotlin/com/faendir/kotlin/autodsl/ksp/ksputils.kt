@@ -4,10 +4,8 @@ import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.*
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.TypeName
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 
@@ -39,9 +37,16 @@ fun KSTypeReference.asTypeName() = resolve().asTypeName()
 fun KSType.asTypeName(): TypeName {
     var name: TypeName = asClassName()
     if (arguments.isNotEmpty()) {
-        name = (name as ClassName).parameterizedBy(arguments.map { it.type!!.asTypeName() })
+        name = (name as ClassName).parameterizedBy(arguments.map {
+            when(it.variance) {
+                Variance.STAR -> STAR
+                Variance.INVARIANT -> it.type!!.asTypeName()
+                Variance.COVARIANT -> WildcardTypeName.producerOf(it.type!!.asTypeName())
+                Variance.CONTRAVARIANT -> WildcardTypeName.consumerOf(it.type!!.asTypeName())
+            }
+        })
     }
-    return if (isMarkedNullable) name.copy(true) else name
+    return if (isMarkedNullable) name.copy(nullable = true) else name
 }
 
 fun KSType.asClassName(): ClassName {

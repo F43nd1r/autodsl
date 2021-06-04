@@ -1,9 +1,8 @@
 package com.faendir.kotlin.autodsl.kapt
 
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.TypeName
+import io.github.enjoydambience.kotlinbard.nullable
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -17,5 +16,7 @@ fun ClassName.mapToKotlin() = JavaToKotlinClassMap.mapJavaToKotlin(asFqName())?.
 fun TypeName.mapToKotlin(): TypeName = when (this) {
     is ClassName -> mapToKotlin()
     is ParameterizedTypeName -> rawType.mapToKotlin().parameterizedBy(typeArguments.map { it.mapToKotlin() })
+    is WildcardTypeName -> if (inTypes.isEmpty()) WildcardTypeName.producerOf(outTypes.first().mapToKotlin())
+    else WildcardTypeName.consumerOf(inTypes.first().mapToKotlin())
     else -> this
 }

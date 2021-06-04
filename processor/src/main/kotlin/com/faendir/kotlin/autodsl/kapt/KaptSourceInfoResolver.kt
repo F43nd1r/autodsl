@@ -5,10 +5,7 @@ package com.faendir.kotlin.autodsl.kapt
 import com.faendir.kotlin.autodsl.SourceInfoResolver
 import com.faendir.kotlin.autodsl.nonnull
 import com.google.devtools.ksp.symbol.ClassKind
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.asTypeName
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.metadata.*
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment
@@ -57,7 +54,14 @@ class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, p
         return kmClass.constructors.associateWith { kmConstructor ->
             constructorElements.first { element ->
                 element.parameters.size == kmConstructor.valueParameters.size && (element.parameters zip kmConstructor.valueParameters).all { (e, k) ->
-                    e.asType().asTypeName().mapToKotlin() == k.type?.asTypeName()?.nonnull
+                    val eType = e.asType().asTypeName().mapToKotlin()
+                    val kType = k.type?.asTypeName()?.nonnull
+                    if (eType is ParameterizedTypeName && kType is ParameterizedTypeName) {
+                        //Invariant kotlin parameters are variant in java, just check erased type
+                        eType.rawType == kType.rawType
+                    } else {
+                        eType == kType
+                    }
                 }
             }
         }.map { (kmConstructor, element) -> Constructor(element, kmConstructor) }
@@ -85,7 +89,13 @@ class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, p
     }
 
     override fun Parameter.getTypeArguments(): List<Type> =
-        (element.asType() as DeclaredType).typeArguments.map { Type(processingEnv.typeUtils.asElement(it) as TypeElement) }
+        (element.asType() as DeclaredType).typeArguments.mapNotNull {
+            try {
+                Type(processingEnv.typeUtils.asElement(it) as TypeElement)
+            } catch (e: Exception) {
+                null
+            }
+        }
 
     override fun Parameter.getTypeName(): TypeName = kmValueParameter.type!!.asTypeName()
 

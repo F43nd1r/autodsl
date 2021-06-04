@@ -4,12 +4,10 @@ package com.faendir.kotlin.autodsl.kapt
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.WildcardTypeName
-import com.squareup.kotlinpoet.metadata.ImmutableKmClass
-import com.squareup.kotlinpoet.metadata.ImmutableKmType
-import com.squareup.kotlinpoet.metadata.ImmutableKmTypeProjection
-import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
+import com.squareup.kotlinpoet.metadata.*
 import kotlinx.metadata.KmClassifier
 import kotlinx.metadata.KmVariance
 
@@ -24,12 +22,12 @@ fun ImmutableKmType.asTypeName(): TypeName = when (val kmClassifier = classifier
 
 fun ImmutableKmTypeProjection.asTypeName(): TypeName = when (variance) {
     null, KmVariance.INVARIANT -> {
-        type!!.asTypeName()
+        type?.asTypeName()?.copy(nullable = type!!.isNullable) ?: STAR
     }
     KmVariance.IN -> {
-        WildcardTypeName.consumerOf(type!!.asTypeName())
+        WildcardTypeName.consumerOf(type!!.asTypeName().copy(nullable = type!!.isNullable))
     }
     KmVariance.OUT -> {
-        WildcardTypeName.producerOf(type!!.asTypeName())
+        WildcardTypeName.producerOf(type!!.asTypeName().copy(nullable = type!!.isNullable))
     }
 }
