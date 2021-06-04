@@ -2,10 +2,7 @@ package com.faendir.kotlin.autodsl.parameter
 
 import com.cesarferreira.pluralize.singularize
 import com.cesarferreira.pluralize.utils.Plurality
-import com.faendir.kotlin.autodsl.AutoDsl
-import com.faendir.kotlin.autodsl.AutoDslSingular
-import com.faendir.kotlin.autodsl.SourceInfoResolver
-import com.faendir.kotlin.autodsl.toRawType
+import com.faendir.kotlin.autodsl.*
 import com.squareup.kotlinpoet.asClassName
 import kotlin.reflect.KClass
 
@@ -19,18 +16,22 @@ class ParameterFactory<A, T : A, C : A, P : A>(private val resolver: SourceInfoR
         return constructor.getParameters().withIndex().map { (index, parameter) ->
             val type = parameter.getTypeName()
             val rawType = type.toRawType()
+            val name = parameter.getName()
+            val doc = parameter.getDoc()
+            val hasDefault = parameter.hasDefault()
+            val requiredGroup = parameter.getAnnotationProperty(AutoDslRequired::class, AutoDslRequired::group)
             when {
                 rawType == setType && parameter.hasAnnotatedTypeArgument(AutoDsl::class) -> {
-                    NestedDslSetParameter(type, parameter.getName(), parameter.getDoc(), parameter.hasDefault(), findSingular(parameter, index), index)
+                    NestedDslSetParameter(type, name, doc, hasDefault, requiredGroup, findSingular(parameter, index), index)
                 }
                 (rawType == listType || rawType == collectionType || rawType == iterableType) && parameter.hasAnnotatedTypeArgument(AutoDsl::class) -> {
-                    NestedDslListParameter(type, parameter.getName(), parameter.getDoc(), parameter.hasDefault(), findSingular(parameter, index), index)
+                    NestedDslListParameter(type, name, doc, hasDefault, requiredGroup, findSingular(parameter, index), index)
                 }
                 parameter.getTypeDeclaration()?.hasAnnotation(AutoDsl::class) == true -> {
-                    NestedDslParameter(type, parameter.getName(), parameter.getDoc(), parameter.hasDefault(), index)
+                    NestedDslParameter(type, name, doc, hasDefault, requiredGroup, index)
                 }
                 else -> {
-                    StandardParameter(type, parameter.getName(), parameter.getDoc(), parameter.hasDefault(), index)
+                    StandardParameter(type, name, doc, hasDefault, requiredGroup, index)
                 }
             }
         }

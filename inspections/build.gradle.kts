@@ -21,10 +21,12 @@ tasks.runIde {
 tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
     changeNotes(
         """
-        <b>v2.0</b>
-        Updated for autodsl 2.0
-        <b>v1.0</b>
-        Initial Release
+        <b>v2.2</b><br>
+        Introduced mandatory groups, of which only one is necessary<br>
+        <b>v2.0</b><br>
+        Updated for autodsl 2.0<br>
+        <b>v1.0</b><br>
+        Initial Release<br>
         """
     )
 }

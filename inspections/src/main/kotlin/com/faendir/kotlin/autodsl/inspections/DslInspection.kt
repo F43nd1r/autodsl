@@ -11,10 +11,12 @@ import com.intellij.psi.PsiElementVisitor
 import org.jetbrains.kotlin.builtins.getReceiverTypeFromFunctionType
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.idea.debugger.sequence.psi.resolveType
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.KotlinType
 import kotlin.contracts.ExperimentalContracts
@@ -40,46 +42,46 @@ class DslInspection : LocalInspectionTool() {
         val present = body.statements.filterIsInstance<KtBinaryExpression>()
             .filter { it.operationToken == KtTokens.EQ }
             .mapNotNull { (it.left as? KtNameReferenceExpression)?.getReferencedName() }
-        val missing = mandatory - present
-        if (missing.isNotEmpty()) {
-            holder.registerProblem(
-                lambda.functionLiteral.rBrace!!,
-                "Missing properties: ${missing.joinToString()}",
-                InsertMissingFix(missing)
-            )
+        mandatory.values.forEach { group ->
+            if (present.none { group.contains(it) }) {
+                holder.registerProblem(
+                    lambda.functionLiteral.rBrace!!,
+                    if (group.size == 1) "Missing property: ${group.first()}" else
+                        "Missing property: One of ${group.joinToString()}",
+                    *group.map { InsertMissingFix(it) }.toTypedArray()
+                )
+            }
         }
-
     }
 
-    inner class InsertMissingFix(private val missing: List<String>) : LocalQuickFix {
-        override fun getFamilyName(): String = "Insert missing assignments"
+    inner class InsertMissingFix(private val missing: String) : LocalQuickFix {
+        override fun getFamilyName(): String = "Insert missing assignment"
 
         override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
             val body = (descriptor.psiElement.parent as? KtFunctionLiteral)?.bodyBlockExpression
             if (body != null) {
                 val factory = KtPsiFactory(project)
-                for (property in missing) {
-                    body.add(factory.createNewLine())
-                    body.add(factory.createNameIdentifier(property))
-                    body.add(factory.createEQ())
-                    body.add(factory.createExpression("TODO()"))
-                }
+                body.add(factory.createNewLine())
+                body.add(factory.createNameIdentifier(missing))
+                body.add(factory.createEQ())
+                body.add(factory.createExpression("TODO()"))
             }
         }
 
-        override fun getName(): String = "Insert assignments for ${missing.joinToString()}"
+        override fun getName(): String = "Insert assignment for $missing"
 
         override fun availableInBatchMode(): Boolean = false
     }
 
-    private fun KotlinType.getMandatoryProperties(): List<String> {
+    private fun KotlinType.getMandatoryProperties(): Map<String, List<String>> {
         val descriptors = memberScope.getContributedDescriptors(DescriptorKindFilter.FUNCTIONS)
-        return (descriptors.filterIsInstance<PropertyDescriptor>()
-            .filter { it.setter?.annotations?.hasAnnotation(FqName(DslMandatory::class.java.name)) ?: false } +
-                descriptors.filterIsInstance<FunctionDescriptor>()
-                    .filter { it.annotations.hasAnnotation(FqName(DslMandatory::class.java.name)) })
-            .map { it.name.identifier }
+        return (descriptors.filterIsInstance<PropertyDescriptor>().map { it.setter?.annotations to it.name.identifier }
+                + descriptors.filterIsInstance<FunctionDescriptor>().map { it.annotations to it.name.identifier })
+            .mapNotNull { (annotations, name) -> annotations?.findAnnotation(FqName(DslMandatory::class.java.name))?.let { (it.findGroup() ?: name) to name } }
+            .groupBy({ it.first }, { it.second })
     }
+
+    private fun AnnotationDescriptor.findGroup(): String? = argumentValue("group")?.value?.toString()?.takeIf { it.isNotEmpty() }
 }
 
 @ExperimentalContracts

@@ -12,7 +12,8 @@ class KaptProcessor : AbstractProcessor() {
     }
 
     override fun getSupportedAnnotationTypes(): Set<String> {
-        return listOf(AutoDsl::class, AutoDslConstructor::class, AutoDslSingular::class, DslMandatory::class).map { it.java.name }.toSet()
+        return listOf(AutoDsl::class, AutoDslConstructor::class, AutoDslSingular::class, AutoDslRequired::class, DslMandatory::class)
+            .map { it.java.name }.toSet()
     }
 
     override fun process(elements: MutableSet<out TypeElement>, roundEnvironment: RoundEnvironment): Boolean {

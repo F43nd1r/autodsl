@@ -11,8 +11,15 @@ import io.github.enjoydambience.kotlinbard.buildProperty
 import io.github.enjoydambience.kotlinbard.nullable
 import kotlin.properties.Delegates
 
-abstract class Parameter(val typeName: TypeName, val name: String, val doc: String?, val hasDefault: Boolean, private val index: Int) {
-    val isMandatory = !hasDefault && !typeName.isNullable
+abstract class Parameter(
+    val typeName: TypeName,
+    val name: String,
+    val doc: String?,
+    val hasDefault: Boolean,
+    val requiredGroup: String?,
+    private val index: Int
+) {
+    val isMandatory = requiredGroup != null || !hasDefault && !typeName.isNullable
 
     fun getClassStatement() = CodeBlock.of("%T::class.java", typeName.toRawType().nonnull)
 
@@ -43,6 +50,7 @@ abstract class Parameter(val typeName: TypeName, val name: String, val doc: Stri
         if (isMandatory) {
             addAnnotation(DslMandatory::class) {
                 useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
+                addMember("group = %S", requiredGroup ?: name + index)
             }
         }
         doc?.let { addKdoc(it) }

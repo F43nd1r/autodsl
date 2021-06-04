@@ -14,12 +14,13 @@ open class NestedDslCollectionParameter(
     name: String,
     doc: String?,
     hasDefault: Boolean,
+    requiredGroup: String?,
     private val singular: String,
     index: Int,
     private val createFunction: String,
     private val convertFunction: String,
 ) :
-    Parameter(typeName, name, doc, hasDefault, index) {
+    Parameter(typeName, name, doc, hasDefault, requiredGroup, index) {
     override fun additionalFunctions(referencedType: TypeName, builderType: TypeName): List<FunSpec> {
         val dslType = (typeName as ParameterizedTypeName).typeArguments.first()
         return listOf(buildFunction(singular) {
@@ -39,8 +40,8 @@ open class NestedDslCollectionParameter(
     }
 }
 
-class NestedDslListParameter(typeName: TypeName, name: String, doc: String?, hasDefault: Boolean, singular: String, index: Int) :
-    NestedDslCollectionParameter(typeName, name, doc, hasDefault, singular, index, "listOf", "toList")
+class NestedDslListParameter(typeName: TypeName, name: String, doc: String?, hasDefault: Boolean, requiredGroup: String?, singular: String, index: Int) :
+    NestedDslCollectionParameter(typeName, name, doc, hasDefault, requiredGroup, singular, index, "listOf", "toList")
 
-class NestedDslSetParameter(typeName: TypeName, name: String, doc: String?, hasDefault: Boolean, singular: String, index: Int) :
-    NestedDslCollectionParameter(typeName, name, doc, hasDefault, singular, index, "setOf", "toSet")
+class NestedDslSetParameter(typeName: TypeName, name: String, doc: String?, hasDefault: Boolean, requiredGroup: String?, singular: String, index: Int) :
+    NestedDslCollectionParameter(typeName, name, doc, hasDefault, requiredGroup, singular, index, "setOf", "toSet")

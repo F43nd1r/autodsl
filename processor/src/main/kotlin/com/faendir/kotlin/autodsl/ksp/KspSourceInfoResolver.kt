@@ -29,7 +29,7 @@ class KspSourceInfoResolver(private val resolver: Resolver) : SourceInfoResolver
         (findAnnotation(annotation)?.arguments?.firstOrNull { it.name?.asString() == property.name }?.value as? KSType?)?.asClassName()
 
     override fun <T : Annotation, V> KSAnnotated.getAnnotationProperty(annotation: KClass<T>, property: KProperty1<T, V>): V? =
-        findAnnotation(annotation)?.arguments?.firstOrNull { it.name?.asString() == property.name }?.value as V?
+        findAnnotation(annotation)?.arguments?.firstOrNull { it.name?.asString() == property.name }?.value as? V?
 
     override fun KSClassDeclaration.isAbstract(): Boolean = modifiers.contains(Modifier.ABSTRACT)
 
