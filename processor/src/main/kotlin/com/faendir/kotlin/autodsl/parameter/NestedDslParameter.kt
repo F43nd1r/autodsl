@@ -8,13 +8,12 @@ import com.squareup.kotlinpoet.TypeName
 import io.github.enjoydambience.kotlinbard.buildFunction
 
 class NestedDslParameter(typeName: TypeName, name: String, doc: String?, hasDefault: Boolean, index: Int) : Parameter(typeName, name, doc, hasDefault, index) {
-    override fun additionalFunctions(): List<FunSpec> = listOf(buildFunction(name) {
-        val builderType = typeName.withBuilderSuffix()
-        addParameter("initializer", builderType.asLambdaReceiver())
-        addStatement("val result = %T().apply(initializer).build()", builderType)
+    override fun additionalFunctions(referencedType: TypeName, builderType: TypeName): List<FunSpec> = listOf(buildFunction(name) {
+        val nestedBuilderType = typeName.withBuilderSuffix()
+        addParameter("initializer", nestedBuilderType.asLambdaReceiver())
+        addStatement("val result = %T().apply(initializer).build()", nestedBuilderType)
         addStatement("%L = result", name)
         addStatement("return result")
         returns(typeName.nonnull)
-        build()
     })
 }

@@ -6,11 +6,12 @@ import com.faendir.kotlin.autodsl.nonnull
 import com.faendir.kotlin.autodsl.toRawType
 import com.squareup.kotlinpoet.*
 import io.github.enjoydambience.kotlinbard.addAnnotation
+import io.github.enjoydambience.kotlinbard.buildFunction
 import io.github.enjoydambience.kotlinbard.buildProperty
 import io.github.enjoydambience.kotlinbard.nullable
 import kotlin.properties.Delegates
 
-abstract class Parameter(val typeName: TypeName, val name: String, private val doc: String?, val hasDefault: Boolean, private val index: Int) {
+abstract class Parameter(val typeName: TypeName, val name: String, val doc: String?, val hasDefault: Boolean, private val index: Int) {
     val isMandatory = !hasDefault && !typeName.isNullable
 
     fun getClassStatement() = CodeBlock.of("%T::class.java", typeName.toRawType().nonnull)
@@ -48,5 +49,13 @@ abstract class Parameter(val typeName: TypeName, val name: String, private val d
         addKdoc("@see %T.%L", referencedType, name)
     }
 
-    open fun additionalFunctions() = emptyList<FunSpec>()
+    fun getBuilderFunction(referencedType: TypeName, builderType: TypeName) = buildFunction("with${name.replaceFirstChar { it.uppercase() }}") {
+        returns(builderType)
+        addParameter(name, typeName)
+        addStatement("return apply·{ this.%1L·= %1L }", name)
+        doc?.let { addKdoc(it) }
+        addKdoc("@see %T.%L", referencedType, name)
+    }
+
+    open fun additionalFunctions(referencedType: TypeName, builderType: TypeName) = emptyList<FunSpec>()
 }

@@ -81,7 +81,8 @@ class DslGenerator<A, T : A, C : A>(
                     initializer("-1")
                 }
                 addProperties(parameters.map { it.getProperty(type) })
-                addFunctions(parameters.flatMap { it.additionalFunctions() })
+                addFunctions(parameters.map { it.getBuilderFunction(type, builderType) })
+                addFunctions(parameters.flatMap { it.additionalFunctions(type, builderType) })
                 addFunction("build") {
                     returns(type)
                     parameters.filter { it.isMandatory }.forEach { addStatement("checkNotNull(%1L)·{ \"%1L must be assigned.\" }", it.name) }

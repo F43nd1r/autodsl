@@ -8,7 +8,6 @@ import com.google.devtools.ksp.symbol.*
 import com.google.devtools.ksp.validate
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
-import org.jetbrains.kotlin.psi.findDocComment.findDocComment
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import com.google.devtools.ksp.getConstructors as superGetConstructors
