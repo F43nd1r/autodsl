@@ -56,5 +56,5 @@ class KspSourceInfoResolver(private val resolver: Resolver) : SourceInfoResolver
 
     override fun KSValueParameter.hasDefault(): Boolean = hasDefault
 
-    override fun KSValueParameter.getDoc(): String = ""
+    override fun KSValueParameter.getDoc(): String? = null
 }

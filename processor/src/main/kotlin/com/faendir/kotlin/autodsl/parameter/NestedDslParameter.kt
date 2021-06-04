@@ -7,7 +7,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.TypeName
 import io.github.enjoydambience.kotlinbard.buildFunction
 
-class NestedDslParameter(typeName: TypeName, name: String, doc: String, hasDefault: Boolean, index: Int) : Parameter(typeName, name, doc, hasDefault, index) {
+class NestedDslParameter(typeName: TypeName, name: String, doc: String?, hasDefault: Boolean, index: Int) : Parameter(typeName, name, doc, hasDefault, index) {
     override fun additionalFunctions(): List<FunSpec> = listOf(buildFunction(name) {
         val builderType = typeName.withBuilderSuffix()
         addParameter("initializer", builderType.asLambdaReceiver())

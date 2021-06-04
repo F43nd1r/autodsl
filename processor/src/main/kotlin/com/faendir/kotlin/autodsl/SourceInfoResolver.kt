@@ -44,5 +44,5 @@ interface SourceInfoResolver<ANNOTATED, TYPE : ANNOTATED, CONSTRUCTOR : ANNOTATE
 
     fun PARAMETER.hasDefault(): Boolean
 
-    fun PARAMETER.getDoc(): String
+    fun PARAMETER.getDoc(): String?
 }

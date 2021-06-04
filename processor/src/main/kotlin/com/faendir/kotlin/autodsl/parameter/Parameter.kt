@@ -10,7 +10,7 @@ import io.github.enjoydambience.kotlinbard.buildProperty
 import io.github.enjoydambience.kotlinbard.nullable
 import kotlin.properties.Delegates
 
-abstract class Parameter(val typeName: TypeName, val name: String, val doc: String, val hasDefault: Boolean, private val index: Int) {
+abstract class Parameter(val typeName: TypeName, val name: String, private val doc: String?, val hasDefault: Boolean, private val index: Int) {
     val isMandatory = !hasDefault && !typeName.isNullable
 
     fun getClassStatement() = CodeBlock.of("%T::class.java", typeName.toRawType().nonnull)
@@ -44,7 +44,7 @@ abstract class Parameter(val typeName: TypeName, val name: String, val doc: Stri
                 useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
             }
         }
-        addKdoc(doc)
+        doc?.let { addKdoc(it) }
         addKdoc("@see %T.%L", referencedType, name)
     }
 

@@ -103,7 +103,7 @@ class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, p
 
     override fun Parameter.hasDefault(): Boolean = kmValueParameter.declaresDefaultValue
 
-    override fun Parameter.getDoc(): String = processingEnv.elementUtils.getDocComment(element)
+    override fun Parameter.getDoc(): String? = processingEnv.elementUtils.getDocComment(element)
 }
 
 interface Annotated {

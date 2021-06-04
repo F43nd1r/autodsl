@@ -11,7 +11,7 @@ import io.github.enjoydambience.kotlinbard.buildFunction
 open class NestedDslCollectionParameter(
     typeName: TypeName,
     name: String,
-    doc: String,
+    doc: String?,
     hasDefault: Boolean,
     private val singular: String,
     index: Int,
@@ -29,8 +29,8 @@ open class NestedDslCollectionParameter(
     })
 }
 
-class NestedDslListParameter(typeName: TypeName, name: String, doc: String, hasDefault: Boolean, singular: String, index: Int) :
+class NestedDslListParameter(typeName: TypeName, name: String, doc: String?, hasDefault: Boolean, singular: String, index: Int) :
     NestedDslCollectionParameter(typeName, name, doc, hasDefault, singular, index, "listOf")
 
-class NestedDslSetParameter(typeName: TypeName, name: String, doc: String, hasDefault: Boolean, singular: String, index: Int) :
+class NestedDslSetParameter(typeName: TypeName, name: String, doc: String?, hasDefault: Boolean, singular: String, index: Int) :
     NestedDslCollectionParameter(typeName, name, doc, hasDefault, singular, index, "setOf")
