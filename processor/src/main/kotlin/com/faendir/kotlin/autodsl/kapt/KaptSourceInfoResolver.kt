@@ -3,6 +3,7 @@
 package com.faendir.kotlin.autodsl.kapt
 
 import com.faendir.kotlin.autodsl.SourceInfoResolver
+import com.faendir.kotlin.autodsl.nonnull
 import com.google.devtools.ksp.symbol.ClassKind
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
@@ -56,7 +57,7 @@ class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, p
         return kmClass.constructors.associateWith { kmConstructor ->
             constructorElements.first { element ->
                 element.parameters.size == kmConstructor.valueParameters.size && (element.parameters zip kmConstructor.valueParameters).all { (e, k) ->
-                    e.asType().asTypeName().mapToKotlin() == k.type?.asTypeName()
+                    e.asType().asTypeName().mapToKotlin() == k.type?.asTypeName()?.nonnull
                 }
             }
         }.map { (kmConstructor, element) -> Constructor(element, kmConstructor) }
