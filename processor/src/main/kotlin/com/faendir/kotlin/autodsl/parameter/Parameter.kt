@@ -10,7 +10,7 @@ import io.github.enjoydambience.kotlinbard.buildProperty
 import io.github.enjoydambience.kotlinbard.nullable
 import kotlin.properties.Delegates
 
-abstract class Parameter(val typeName: TypeName, val name: String, val hasDefault: Boolean, private val index: Int) {
+abstract class Parameter(val typeName: TypeName, val name: String, val doc: String, val hasDefault: Boolean, private val index: Int) {
     val isMandatory = !hasDefault && !typeName.isNullable
 
     fun getClassStatement() = CodeBlock.of("%T::class.java", typeName.toRawType().nonnull)
@@ -31,7 +31,7 @@ abstract class Parameter(val typeName: TypeName, val name: String, val hasDefaul
         }, name
     )
 
-    fun getProperty(): PropertySpec = buildProperty(name, typeName.nullable) {
+    fun getProperty(referencedType: TypeName): PropertySpec = buildProperty(name, typeName.nullable) {
         mutable(true)
         delegate(
             "%1T.observable(null)·{·_, _, _·-> %2L·= %2L and %3L }",
@@ -44,6 +44,8 @@ abstract class Parameter(val typeName: TypeName, val name: String, val hasDefaul
                 useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
             }
         }
+        addKdoc(doc)
+        addKdoc("@see %T.%L", referencedType, name)
     }
 
     open fun additionalFunctions() = emptyList<FunSpec>()

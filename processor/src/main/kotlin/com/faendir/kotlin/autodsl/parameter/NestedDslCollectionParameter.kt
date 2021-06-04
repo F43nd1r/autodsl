@@ -1,8 +1,9 @@
 package com.faendir.kotlin.autodsl.parameter
 
-import com.faendir.kotlin.autodsl.*
+import com.faendir.kotlin.autodsl.asLambdaReceiver
+import com.faendir.kotlin.autodsl.nonnull
+import com.faendir.kotlin.autodsl.withBuilderSuffix
 import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.TypeName
 import io.github.enjoydambience.kotlinbard.buildFunction
@@ -10,12 +11,13 @@ import io.github.enjoydambience.kotlinbard.buildFunction
 open class NestedDslCollectionParameter(
     typeName: TypeName,
     name: String,
+    doc: String,
     hasDefault: Boolean,
     private val singular: String,
     index: Int,
     private val createFunction: String,
 ) :
-    Parameter(typeName, name, hasDefault, index) {
+    Parameter(typeName, name, doc, hasDefault, index) {
     override fun additionalFunctions(): List<FunSpec> = listOf(buildFunction(singular) {
         val dslType = (typeName as ParameterizedTypeName).typeArguments.first()
         val builderType = dslType.withBuilderSuffix()
@@ -27,8 +29,8 @@ open class NestedDslCollectionParameter(
     })
 }
 
-class NestedDslListParameter(typeName: TypeName, name: String, hasDefault: Boolean, singular: String, index: Int) :
-    NestedDslCollectionParameter(typeName, name, hasDefault, singular, index, "listOf")
+class NestedDslListParameter(typeName: TypeName, name: String, doc: String, hasDefault: Boolean, singular: String, index: Int) :
+    NestedDslCollectionParameter(typeName, name, doc, hasDefault, singular, index, "listOf")
 
-class NestedDslSetParameter(typeName: TypeName, name: String, hasDefault: Boolean, singular: String, index: Int) :
-    NestedDslCollectionParameter(typeName, name, hasDefault, singular, index, "setOf")
+class NestedDslSetParameter(typeName: TypeName, name: String, doc: String, hasDefault: Boolean, singular: String, index: Int) :
+    NestedDslCollectionParameter(typeName, name, doc, hasDefault, singular, index, "setOf")

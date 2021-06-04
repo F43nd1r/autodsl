@@ -80,7 +80,7 @@ class DslGenerator<A, T : A, C : A>(
                     mutable(true)
                     initializer("-1")
                 }
-                addProperties(parameters.map { it.getProperty() })
+                addProperties(parameters.map { it.getProperty(type) })
                 addFunctions(parameters.flatMap { it.additionalFunctions() })
                 addFunction("build") {
                     returns(type)

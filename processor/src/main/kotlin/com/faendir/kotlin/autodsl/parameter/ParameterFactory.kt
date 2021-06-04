@@ -21,16 +21,16 @@ class ParameterFactory<A, T : A, C : A, P : A>(private val resolver: SourceInfoR
             val rawType = type.toRawType()
             when {
                 rawType == setType && parameter.hasAnnotatedTypeArgument(AutoDsl::class) -> {
-                    NestedDslSetParameter(type, parameter.getName(), parameter.hasDefault(), findSingular(parameter, index), index)
+                    NestedDslSetParameter(type, parameter.getName(), parameter.getDoc(), parameter.hasDefault(), findSingular(parameter, index), index)
                 }
                 (rawType == listType || rawType == collectionType || rawType == iterableType) && parameter.hasAnnotatedTypeArgument(AutoDsl::class) -> {
-                    NestedDslListParameter(type, parameter.getName(), parameter.hasDefault(), findSingular(parameter, index), index)
+                    NestedDslListParameter(type, parameter.getName(), parameter.getDoc(), parameter.hasDefault(), findSingular(parameter, index), index)
                 }
                 parameter.getTypeDeclaration()?.hasAnnotation(AutoDsl::class) == true -> {
-                    NestedDslParameter(type, parameter.getName(), parameter.hasDefault(), index)
+                    NestedDslParameter(type, parameter.getName(), parameter.getDoc(), parameter.hasDefault(), index)
                 }
                 else -> {
-                    StandardParameter(type, parameter.getName(), parameter.hasDefault(), index)
+                    StandardParameter(type, parameter.getName(), parameter.getDoc(), parameter.hasDefault(), index)
                 }
             }
         }

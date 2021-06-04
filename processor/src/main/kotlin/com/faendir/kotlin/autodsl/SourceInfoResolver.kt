@@ -14,7 +14,7 @@ interface SourceInfoResolver<ANNOTATED, TYPE : ANNOTATED, CONSTRUCTOR : ANNOTATE
 
     fun TYPE.getClassKind(): ClassKind
 
-    fun ANNOTATED.hasAnnotation(annotation: KClass<out Annotation>) : Boolean
+    fun ANNOTATED.hasAnnotation(annotation: KClass<out Annotation>): Boolean
 
     fun <T : Annotation> ANNOTATED.getAnnotationTypeProperty(annotation: KClass<T>, property: KProperty1<T, KClass<*>>): ClassName?
 
@@ -28,19 +28,21 @@ interface SourceInfoResolver<ANNOTATED, TYPE : ANNOTATED, CONSTRUCTOR : ANNOTATE
 
     fun TYPE.getPrimaryConstructor(): CONSTRUCTOR?
 
-    fun CONSTRUCTOR.isValid() : Boolean
+    fun CONSTRUCTOR.isValid(): Boolean
 
-    fun CONSTRUCTOR.getParameters() : List<PARAMETER>
+    fun CONSTRUCTOR.getParameters(): List<PARAMETER>
 
-    fun TYPE.asClassName() : ClassName
+    fun TYPE.asClassName(): ClassName
 
-    fun PARAMETER.getTypeDeclaration() : TYPE?
+    fun PARAMETER.getTypeDeclaration(): TYPE?
 
-    fun PARAMETER.getTypeArguments() : List<TYPE>
+    fun PARAMETER.getTypeArguments(): List<TYPE>
 
     fun PARAMETER.getTypeName(): TypeName
 
     fun PARAMETER.getName(): String
 
     fun PARAMETER.hasDefault(): Boolean
+
+    fun PARAMETER.getDoc(): String
 }
