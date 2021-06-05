@@ -151,41 +151,38 @@ class DslGenerator<A, T : A, C : A>(
         return true
     }
 
-    private fun TypeSpecBuilder.addParameterNestedSetter(parameter: Parameter) {
-        addFunction(parameter.name) {
-            val nestedBuilderType = parameter.typeName.withBuilderSuffix()
-            addParameter("initializer", nestedBuilderType.asLambdaReceiver())
-            addStatement("val result = %T().apply(initializer).build()", nestedBuilderType)
-            addStatement("%L = result", parameter.name)
-            addStatement("return result")
-            returns(parameter.typeName.nonnull)
-        }
+    private fun TypeSpecBuilder.addParameterNestedSetter(parameter: Parameter) = addFunction(parameter.name) {
+        val nestedBuilderType = parameter.typeName.withBuilderSuffix()
+        addParameter("initializer", nestedBuilderType.asLambdaReceiver())
+        addStatement("val result = %T().apply(initializer).build()", nestedBuilderType)
+        addStatement("%L = result", parameter.name)
+        addStatement("return result")
+        returns(parameter.typeName.nonnull)
     }
 
-    private fun TypeSpecBuilder.addParameterNestedAdder(parameter: Parameter) {
-        addFunction(parameter.collectionType!!.singular) {
-            val elementType = (parameter.typeName as ParameterizedTypeName).typeArguments.first()
-            val nestedBuilderType = elementType.withBuilderSuffix()
-            addParameter("initializer", nestedBuilderType.asLambdaReceiver())
-            addStatement("val result = %T().apply(initializer).build()", nestedBuilderType)
-            addStatement("%1L = %1L?.plus(result) ?: %2L(result)", parameter.name, parameter.collectionType.createFunction)
-            addStatement("return result")
-            returns(elementType.nonnull)
-        }
+    private fun TypeSpecBuilder.addParameterNestedAdder(parameter: Parameter) = addFunction(parameter.collectionType!!.singular) {
+        val elementType = (parameter.typeName as ParameterizedTypeName).typeArguments.first()
+        val nestedBuilderType = elementType.withBuilderSuffix()
+        addParameter("initializer", nestedBuilderType.asLambdaReceiver())
+        addStatement("val result = %T().apply(initializer).build()", nestedBuilderType)
+        addStatement("%1L = %1L?.plus(result) ?: %2L(result)", parameter.name, parameter.collectionType.createFunction)
+        addStatement("return result")
+        returns(elementType.nonnull)
     }
 
-    private fun TypeSpecBuilder.addParameterBuilderStyleVarargSetter(parameter: Parameter, builderType: ClassName, type: ClassName) {
+    private fun TypeSpecBuilder.addParameterBuilderStyleVarargSetter(parameter: Parameter, builderType: ClassName, type: ClassName) =
         addFunction("with${parameter.name.replaceFirstChar { it.uppercase() }}") {
+            val elementType =
+                (parameter.typeName as ParameterizedTypeName).typeArguments.first().let { if (it is WildcardTypeName) it.outTypes.first() else it }
             returns(builderType)
-            addParameter(parameter.name, (parameter.typeName as ParameterizedTypeName).typeArguments.first(), KModifier.VARARG)
+            addParameter(parameter.name, elementType, KModifier.VARARG)
             addStatement("this.%1L·= %1L.%2L()", parameter.name, parameter.collectionType!!.convertFunction)
             addStatement("return this")
             parameter.doc?.let { addKdoc(it) }
             addKdoc("@see %T.%L", type, parameter.name)
         }
-    }
 
-    private fun TypeSpecBuilder.addParameterBuilderStyleSetter(parameter: Parameter, builderType: ClassName, type: ClassName) {
+    private fun TypeSpecBuilder.addParameterBuilderStyleSetter(parameter: Parameter, builderType: ClassName, type: ClassName) =
         addFunction("with${parameter.name.replaceFirstChar { it.uppercase() }}") {
             returns(builderType)
             addParameter(parameter.name, parameter.typeName)
@@ -194,26 +191,23 @@ class DslGenerator<A, T : A, C : A>(
             parameter.doc?.let { addKdoc(it) }
             addKdoc("@see %T.%L", type, parameter.name)
         }
-    }
 
-    private fun TypeSpecBuilder.addParameterProperty(parameter: Parameter, type: ClassName) {
-        addProperty(parameter.name, parameter.typeName.nullable) {
-            mutable(true)
-            delegate(
-                "%1T.observable(null)·{·_, _, _·-> %2L·= %2L and %3L }",
-                Delegates::class.asClassName(),
-                DEFAULTS_BITFLAGS_FIELD_NAME,
-                (1 shl parameter.index).inv()
-            )
-            if (parameter.isMandatory) {
-                addAnnotation(DslMandatory::class) {
-                    useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
-                    addMember("group = %S", parameter.group)
-                }
+    private fun TypeSpecBuilder.addParameterProperty(parameter: Parameter, type: ClassName) = addProperty(parameter.name, parameter.typeName.nullable) {
+        mutable(true)
+        delegate(
+            "%1T.observable(null)·{·_, _, _·-> %2L·= %2L and %3L }",
+            Delegates::class.asClassName(),
+            DEFAULTS_BITFLAGS_FIELD_NAME,
+            (1 shl parameter.index).inv()
+        )
+        if (parameter.isMandatory) {
+            addAnnotation(DslMandatory::class) {
+                useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
+                addMember("group = %S", parameter.group)
             }
-            parameter.doc?.let { addKdoc(it) }
-            addKdoc("@see %T.%L", type, parameter.name)
         }
+        parameter.doc?.let { addKdoc(it) }
+        addKdoc("@see %T.%L", type, parameter.name)
     }
 
 }
