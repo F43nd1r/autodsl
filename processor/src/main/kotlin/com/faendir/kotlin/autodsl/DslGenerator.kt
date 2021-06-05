@@ -94,9 +94,9 @@ class DslGenerator<A, T : A, C : A>(
                 addFunction("build") {
                     returns(type)
                     parameters.filter { it.isMandatory }.groupBy { it.group }.forEach { (_, parameters) ->
-                        addStatement("check(%L)·{ \"%L must be assigned.\" }",
-                            parameters.map { codeBlock("%L != null", it.name) }.joinToCode(),
-                            parameters.joinToString(prefix = if (parameters.size > 1) "One of " else "") { it.name }
+                        addStatement("check(%L)·{ \"%L·must·be·assigned.\" }",
+                            parameters.map { codeBlock("%L != null", it.name) }.joinToCode(" || "),
+                            parameters.joinToString(separator = ",·", prefix = if (parameters.size > 1) "One·of·" else "") { it.name }
                         )
                     }
                     if (parameters.any { it.hasDefault }) {
