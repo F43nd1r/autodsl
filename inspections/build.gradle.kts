@@ -12,6 +12,7 @@ dependencies {
 intellij {
     version = "2021.1"
     setPlugins("org.jetbrains.kotlin", "com.intellij.java")
+    updateSinceUntilBuild = false
 }
 
 tasks.runIde {
