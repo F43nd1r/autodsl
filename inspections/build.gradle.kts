@@ -1,27 +1,29 @@
+@Suppress("DSL_SCOPE_VIOLATION") // TODO remove when https://youtrack.jetbrains.com/issue/KTIJ-19369 is fixed
 plugins {
-    id("org.jetbrains.intellij") version "0.7.2"
+    alias(libs.plugins.intellijPlugin)
     java
     kotlin
 }
 
 dependencies {
-    implementation(project(":annotations"))
+    implementation(projects.annotations)
 }
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
-    version = "2021.1"
-    setPlugins("org.jetbrains.kotlin", "com.intellij.java")
-    updateSinceUntilBuild = false
+    version.set("2021.3")
+    plugins.set(listOf("org.jetbrains.kotlin", "com.intellij.java"))
+    updateSinceUntilBuild.set(false)
 }
 
-tasks.runIde {
-    jvmArgs("--add-exports", "java.base/jdk.internal.vm=ALL-UNNAMED")
-}
+tasks {
+    runIde {
+        jvmArgs("--add-exports", "java.base/jdk.internal.vm=ALL-UNNAMED")
+    }
 
-tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml") {
-    changeNotes(
-        """
+    patchPluginXml {
+        changeNotes.set(
+            """
         <b>v2.2</b><br>
         Introduced mandatory groups, of which only one is necessary<br>
         <b>v2.0</b><br>
@@ -29,13 +31,14 @@ tasks.getByName<org.jetbrains.intellij.tasks.PatchPluginXmlTask>("patchPluginXml
         <b>v1.0</b><br>
         Initial Release<br>
         """
-    )
-}
+        )
+    }
 
-tasks.withType<org.jetbrains.intellij.tasks.PublishTask> {
-    token(project.findProperty("intellijToken") as? String ?: System.getenv("INTELLIJ_TOKEN"))
-}
+    publishPlugin {
+        token.set(project.findProperty("intellijToken") as? String ?: System.getenv("INTELLIJ_TOKEN"))
+    }
 
-tasks.register("publish") {
-    dependsOn("publishPlugin")
+    register("publish") {
+        dependsOn(publishPlugin)
+    }
 }

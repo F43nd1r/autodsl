@@ -5,12 +5,12 @@ plugins {
 }
 
 dependencies {
-    implementation("com.google.devtools.ksp:symbol-processing-api:${properties["kspVersion"]}")
-    implementation(project(":annotations"))
-    implementation("com.squareup:kotlinpoet:${properties["kotlinPoetVersion"]}")
-    implementation("com.squareup:kotlinpoet-metadata-specs:${properties["kotlinPoetVersion"]}")
-    implementation("com.squareup:kotlinpoet-classinspector-elements:${properties["kotlinPoetVersion"]}")
-    implementation("com.faendir:kotlinbard:${properties["kotlinBardVersion"]}")
-    implementation("com.github.cesarferreira:kotlin-pluralizer:${properties["pluralizerVersion"]}")
+    implementation(libs.ksp.api)
+    implementation(projects.annotations)
+    implementation(libs.kotlinpoet.ksp)
+    implementation(libs.kotlinpoet.metadataSpecs)
+    implementation(libs.kotlinpoet.classinspectorElements)
+    implementation(libs.kotlinbard)
+    implementation(libs.kotlinPluralizer)
     implementation(kotlin("compiler-embeddable"))
 }

@@ -1,0 +1,35 @@
+[versions]
+kotlin = "1.6.0"
+dokka = "1.6.0"
+jgitver = "0.10.0-rc03"
+nexusPublish = "1.1.0"
+ksp = "1.6.0-1.0.2"
+kotlinPoet = "1.10.2"
+kotlinPoetMetadata = "1.9.0"
+kotlinBard = "0.4.0"
+pluralizer = "1.0.0"
+compileTesting = "1.4.6"
+junit = "5.8.2"
+strikt = "0.33.0"
+autoCommon = "1.1.2"
+intellijPlugin = "1.3.0"
+
+[plugins]
+intellijPlugin = { id = "org.jetbrains.intellij", version.ref = "intellijPlugin"}
+
+[libraries]
+ksp-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
+ksp-gradle = { module = "com.google.devtools.ksp:symbol-processing-gradle-plugin", version.ref = "ksp" }
+kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinPoet" }
+kotlinpoet-metadataSpecs = { module = "com.squareup:kotlinpoet-metadata-specs", version.ref = "kotlinPoetMetadata" }
+kotlinpoet-classinspectorElements = { module = "com.squareup:kotlinpoet-classinspector-elements", version.ref = "kotlinPoetMetadata" }
+kotlinbard = { module = "com.faendir:kotlinbard", version.ref = "kotlinBard" }
+kotlinPluralizer = { module = "com.github.cesarferreira:kotlin-pluralizer", version.ref = "pluralizer" }
+kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+dokka-gradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+dokka-core = { module = "org.jetbrains.dokka:dokka-core", version.ref = "dokka" }
+jgitver = { module = "gradle.plugin.fr.brouillard.oss.gradle:gradle-jgitver-plugin", version.ref = "jgitver" }
+nexusPublish = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexusPublish" }
+junit = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
+kotlin-compileTesting = { module = "com.github.tschuchortdev:kotlin-compile-testing-ksp", version.ref = "compileTesting" }
+strikt = { module = "io.strikt:strikt-core", version.ref = "strikt" }

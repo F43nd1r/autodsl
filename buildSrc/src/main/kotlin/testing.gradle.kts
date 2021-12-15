@@ -1,13 +1,16 @@
 plugins {
     jacoco
+    id("kotlin")
 }
 
-dependencies {
-    "testImplementation"(kotlin("test-junit5"))
-    "testImplementation"("org.junit.jupiter:junit-jupiter-engine:${properties["junitVersion"]}")
-    "testImplementation"("com.github.tschuchortdev:kotlin-compile-testing-ksp:${properties["compileTestingVersion"]}")
-    "testImplementation"("io.strikt:strikt-core:${properties["striktVersion"]}")
-    "testImplementation"(kotlin("scripting-compiler-embeddable"))
+if(canUseLibs()) {
+    dependencies {
+        testImplementation(kotlin("test-junit5"))
+        testImplementation(libs.junit)
+        testImplementation(libs.kotlin.compileTesting)
+        testImplementation(libs.strikt)
+        testImplementation(kotlin("scripting-compiler-embeddable"))
+    }
 }
 
 tasks.withType<Test> {

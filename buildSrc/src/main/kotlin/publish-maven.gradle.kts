@@ -20,7 +20,7 @@ val javadocJar = tasks.register<Jar>("javadocJar") {
 
 val sourcesJar = tasks.register<Jar>("sourcesJar") {
     group = "documentation"
-    //from(sourceSets["main"].allSource)
+    from(project.extensions.getByType<SourceSetContainer>()["main"].allSource)
     archiveClassifier.set("sources")
 }
 

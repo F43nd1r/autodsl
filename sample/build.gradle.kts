@@ -1,12 +1,12 @@
 plugins {
     kotlin
-    id("com.google.devtools.ksp")
+    com.google.devtools.ksp
     testing
 }
 
 dependencies {
-    implementation(project(":annotations"))
-    ksp(project(":processor"))
+    implementation(projects.annotations)
+    ksp(projects.processor)
 }
 
 sourceSets {
