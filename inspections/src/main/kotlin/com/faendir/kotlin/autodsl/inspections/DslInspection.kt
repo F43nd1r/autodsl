@@ -12,10 +12,13 @@ import org.jetbrains.kotlin.builtins.getReceiverTypeFromFunctionType
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.idea.caches.resolve.analyze
+import org.jetbrains.kotlin.idea.caches.resolve.analyzeAndGetResult
 import org.jetbrains.kotlin.idea.debugger.sequence.psi.resolveType
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.KotlinType
@@ -28,7 +31,7 @@ class DslInspection : LocalInspectionTool() {
         return object : KtVisitorVoid() {
 
             override fun visitLambdaExpression(lambda: KtLambdaExpression) {
-                val receiver = lambda.resolveType().getReceiverTypeFromFunctionType()
+                val receiver = lambda.analyze().getType(lambda)?.getReceiverTypeFromFunctionType()
                 if (receiver.isDSLintClass()) {
                     visitDslLambda(holder, lambda, receiver)
                 }
