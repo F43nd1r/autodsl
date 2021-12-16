@@ -38,8 +38,4 @@ nexusPublishing {
             password.set(project.findProperty("ossrhPassword") as? String ?: System.getenv("OSSRH_PASSWORD"))
         }
     }
-    transitionCheckOptions {
-        delayBetween.set(Duration.ofMinutes(1))
-        maxRetries.set(60)
-    }
 }
