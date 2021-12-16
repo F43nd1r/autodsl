@@ -1,3 +1,5 @@
+import java.time.Duration
+
 plugins {
     id("repositories")
     id("org.jetbrains.dokka")
@@ -33,5 +35,9 @@ nexusPublishing {
             username.set(project.findProperty("ossrhUser") as? String ?: System.getenv("OSSRH_USER"))
             password.set(project.findProperty("ossrhPassword") as? String ?: System.getenv("OSSRH_PASSWORD"))
         }
+    }
+    transitionCheckOptions {
+        delayBetween.set(Duration.ofMinutes(1))
+        maxRetries.set(60)
     }
 }
