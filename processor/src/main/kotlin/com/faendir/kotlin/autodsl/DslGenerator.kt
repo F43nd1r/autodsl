@@ -108,7 +108,13 @@ class DslGenerator<A, T : A, C : A>(
                         addStatement(
                             "return %T::class.java.getConstructor(%L, %T::class.java, $markerExpression).newInstance(%L, %L, null)",
                             type,
-                            parameters.map { CodeBlock.of("%T::class.java", it.typeName.toRawType().nonnull) }.joinToCode(", "),
+                            parameters.map {
+                                CodeBlock.of(
+                                    "%T::class.%L",
+                                    it.typeName.toRawType().nonnull,
+                                    if (it.typeName.isNullable) "javaObjectType" else "java"
+                                )
+                            }.joinToCode(", "),
                             INT,
                             markerParameter,
                             parameters.map {

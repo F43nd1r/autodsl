@@ -3,19 +3,16 @@ package com.faendir.kotlin.autodsl
 import com.faendir.kotlin.autodsl.kapt.KaptProcessor
 import com.faendir.kotlin.autodsl.ksp.KspProcessorProvider
 import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.SourceFile.Companion.fromPath
 import com.tschuchort.compiletesting.SourceFile.Companion.kotlin
 import com.tschuchort.compiletesting.symbolProcessorProviders
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.DynamicTest
 import strikt.api.expectThat
-import strikt.assertions.containsExactly
 import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEqualTo
 import java.io.File
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 internal val KotlinCompilation.Result.workingDir: File
     get() = outputDirectory.parentFile!!
@@ -37,7 +34,7 @@ fun compile(
     return listOf(DynamicTest.dynamicTest("ksp") { assertNotNull(compileKsp) },
         DynamicTest.dynamicTest("kapt") { assertNotNull(compileKapt) },
         DynamicTest.dynamicTest("compare") {
-                expectThat(compileKsp.map { it.readText() }).containsExactlyInAnyOrder(compileKapt.map { it.readText() })
+            expectThat(compileKsp.map { it.readText() }).containsExactlyInAnyOrder(compileKapt.map { it.readText() })
         })
 }
 
@@ -82,7 +79,9 @@ fun compileKapt(
     return result.generatedFiles.filter { it.extension == "kt" }
 }
 
-private fun KotlinCompilation.Result.callEval() = classLoader.loadClass("EvalKt").declaredMethods[0].run {
-    trySetAccessible()
-    invoke(null)
-}
+private fun KotlinCompilation.Result.callEval() = classLoader.loadClass("EvalKt").declaredMethods
+    .first { it.name[0] != '$' /* skip jacoco added function */ }
+    .run {
+        trySetAccessible()
+        invoke(null)
+    }
