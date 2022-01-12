@@ -8,17 +8,23 @@ import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.metadata.*
+import io.github.enjoydambience.kotlinbard.nullable
 import kotlinx.metadata.KmClassifier
 import kotlinx.metadata.KmVariance
 
 @OptIn(KotlinPoetMetadataPreview::class)
 fun ImmutableKmClass.asClassName() = ClassName.bestGuess(this.name.replace("/", "."))
 
-fun ImmutableKmType.asTypeName(): TypeName = when (val kmClassifier = classifier) {
-    is KmClassifier.Class -> ClassName.bestGuess(kmClassifier.name.replace("/", "."))
-    is KmClassifier.TypeAlias -> ClassName.bestGuess(kmClassifier.name.replace("/", "."))
-    else -> throw IllegalArgumentException()
-}.let { name -> if(arguments.isNotEmpty()) name.parameterizedBy(arguments.map { it.asTypeName() }) else name }
+fun ImmutableKmType.asTypeName(): TypeName {
+    val className = when (val kmClassifier = classifier) {
+        is KmClassifier.Class -> ClassName.bestGuess(kmClassifier.name.replace("/", "."))
+        is KmClassifier.TypeAlias -> ClassName.bestGuess(kmClassifier.name.replace("/", "."))
+        else -> throw IllegalArgumentException()
+    }
+    var typeName = if (arguments.isNotEmpty()) className.parameterizedBy(arguments.map { it.asTypeName() }) else className
+    if (isNullable) typeName = typeName.nullable
+    return typeName
+}
 
 fun ImmutableKmTypeProjection.asTypeName(): TypeName = when (variance) {
     null, KmVariance.INVARIANT -> {
