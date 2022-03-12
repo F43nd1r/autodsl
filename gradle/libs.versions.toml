@@ -10,7 +10,7 @@ kotlinBard = "0.4.0"
 pluralizer = "1.0.0"
 compileTesting = "1.4.6"
 junit = "5.8.2"
-strikt = "0.33.0"
+strikt = "0.34.1"
 autoCommon = "1.1.2"
 intellijPlugin = "1.3.0"
 
