@@ -8,7 +8,9 @@ pluginManagement {
     }
 }
 rootProject.name = "autodsl"
-include("processor")
-include("annotations")
-include("sample")
-include("inspections")
+
+rootDir.listFiles()?.forEach {
+    if(it.isDirectory && it.name != "buildSrc" && it.list()?.contains("build.gradle.kts") == true) {
+        include(it.name)
+    }
+}
