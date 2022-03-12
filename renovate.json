@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "platform": "github",
+  "dependencyDashboard": false,
+  "extends": [
+    "group:monorepos",
+    "group:recommended",
+    "packages:react",
+    "workarounds:all"
+  ],
+  "rangeStrategy": "pin",
+  "packageRules": [
+    {
+      "matchUpdateTypes": [
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "automerge": true,
+      "automergeType": "branch"
+    }
+  ]
+}
