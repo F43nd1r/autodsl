@@ -11,6 +11,5 @@ dependencies {
     implementation(libs.kotlinpoet.metadataSpecs)
     implementation(libs.kotlinpoet.classinspectorElements)
     implementation(libs.kotlinbard)
-    implementation(libs.kotlinPluralizer)
     implementation(kotlin("compiler-embeddable"))
 }

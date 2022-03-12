@@ -105,7 +105,6 @@ plugins {
 repositories {
     mavenCentral()
     google()
-    maven { setUrl("https://jitpack.io") }
 }
 
 dependencies {
@@ -126,7 +125,6 @@ plugins {
 repositories {
     mavenCentral()
     google()
-    maven { setUrl("https://jitpack.io") }
 }
 
 dependencies {

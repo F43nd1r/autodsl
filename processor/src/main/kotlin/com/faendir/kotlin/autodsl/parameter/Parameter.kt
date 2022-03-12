@@ -13,7 +13,7 @@ class Parameter(
     val collectionType: CollectionType?
 ) {
     val isMandatory = requiredGroup != null || !hasDefault && !typeName.isNullable
-    val group = requiredGroup ?: name + index
+    val group = requiredGroup ?: (name + index)
 }
 
 sealed class CollectionType(val createFunction: String, val convertFunction: String, val singular: String) {

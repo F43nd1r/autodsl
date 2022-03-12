@@ -1,7 +1,7 @@
 package com.faendir.kotlin.autodsl.parameter
 
-import com.cesarferreira.pluralize.singularize
-import com.cesarferreira.pluralize.utils.Plurality
+import com.shadow.pluralize.singularize
+import com.shadow.pluralize.utils.Plurality
 import com.faendir.kotlin.autodsl.*
 import com.faendir.kotlin.autodsl.parameter.CollectionType.ListType
 import com.faendir.kotlin.autodsl.parameter.CollectionType.SetType

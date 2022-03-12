@@ -1,6 +1,5 @@
 package com.faendir.kotlin.autodsl
 
-import com.google.devtools.ksp.processing.CodeGenerator
 import com.squareup.kotlinpoet.FileSpec
 
 interface CodeWriter<S> {
