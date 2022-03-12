@@ -21,7 +21,9 @@ jobs:
         with:
           ref: ${{ github.ref }}
       - name: Publish
-        run: ./gradlew publish --no-daemon
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          arguments: publish --no-daemon
         env:
           GITHUB_USER: github-action
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -16,4 +16,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Run tests
-        run: ./gradlew test --no-daemon
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          arguments: test --no-daemon
