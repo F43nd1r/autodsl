@@ -1,13 +1,12 @@
-package com.faendir.kotlin.autodsl
+package com.faendir.kotlin.autodsl.ksp
 
-import com.google.devtools.ksp.processing.CodeGenerator
-import com.google.devtools.ksp.processing.Dependencies
-import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.*
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STAR
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.WildcardTypeName
 import kotlin.reflect.KClass
-import kotlin.reflect.KProperty1
 
 /**
  * Light check without type resolution. A positive result does not guarantee equality
@@ -29,16 +28,13 @@ fun <T : Annotation> KSAnnotated.findAnnotation(annotation: KClass<T>): KSAnnota
     return annotations.filter { it.couldBe(annotation) }.firstOrNull { it.isEqualTo(annotation) }
 }
 
-val KSDeclaration.normalizedPackageName
-    get() = packageName.asString().takeIf { it != "<root>" } ?: ""
-
 fun KSTypeReference.asTypeName() = resolve().asTypeName()
 
 fun KSType.asTypeName(): TypeName {
     var name: TypeName = asClassName()
     if (arguments.isNotEmpty()) {
         name = (name as ClassName).parameterizedBy(arguments.map {
-            when(it.variance) {
+            when (it.variance) {
                 Variance.STAR -> STAR
                 Variance.INVARIANT -> it.type!!.asTypeName()
                 Variance.COVARIANT -> WildcardTypeName.producerOf(it.type!!.asTypeName())
@@ -49,7 +45,8 @@ fun KSType.asTypeName(): TypeName {
     return if (isMarkedNullable) name.copy(nullable = true) else name
 }
 
-fun KSType.asClassName(): ClassName {
-    return ClassName(declaration.normalizedPackageName, declaration.simpleName.asString())
-}
+fun KSDeclaration.asClassName() =
+    ClassName(packageName.asString(), generateSequence({ this }, { it.parentDeclaration }).map { it.simpleName.asString() }.toList().reversed())
+
+fun KSType.asClassName(): ClassName = declaration.asClassName()
 

@@ -11,6 +11,7 @@ import com.squareup.kotlinpoet.TypeName
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import com.google.devtools.ksp.getConstructors as superGetConstructors
+import com.faendir.kotlin.autodsl.ksp.asClassName as asClassNameUtil
 
 class KspSourceInfoResolver(private val resolver: Resolver) : SourceInfoResolver<KSAnnotated, KSClassDeclaration, KSFunctionDeclaration, KSValueParameter> {
     private fun getClassesWithAnnotation(annotation: String): List<KSClassDeclaration> =
@@ -26,7 +27,7 @@ class KspSourceInfoResolver(private val resolver: Resolver) : SourceInfoResolver
         annotations.filter { it.couldBe(annotation) }.any { it.isEqualTo(annotation) }
 
     override fun <T : Annotation> KSAnnotated.getAnnotationTypeProperty(annotation: KClass<T>, property: KProperty1<T, KClass<*>>): ClassName? =
-        (findAnnotation(annotation)?.arguments?.firstOrNull { it.name?.asString() == property.name }?.value as? KSType?)?.asClassName()
+        (findAnnotation(annotation)?.arguments?.firstOrNull { it.name?.asString() == property.name }?.value as? KSType?)?.asClassNameUtil()
 
     override fun <T : Annotation, V> KSAnnotated.getAnnotationProperty(annotation: KClass<T>, property: KProperty1<T, V>): V? =
         findAnnotation(annotation)?.arguments?.firstOrNull { it.name?.asString() == property.name }?.value as? V?
@@ -43,7 +44,8 @@ class KspSourceInfoResolver(private val resolver: Resolver) : SourceInfoResolver
 
     override fun KSFunctionDeclaration.getParameters(): List<KSValueParameter> = parameters
 
-    override fun KSClassDeclaration.asClassName(): ClassName = ClassName(normalizedPackageName, simpleName.asString())
+    override fun KSClassDeclaration.asClassName(): ClassName = asClassNameUtil()
+
     override fun KSValueParameter.getTypeDeclaration(): KSClassDeclaration? = type.resolve().declaration as? KSClassDeclaration
 
     override fun KSValueParameter.getTypeArguments(): List<KSClassDeclaration> =
