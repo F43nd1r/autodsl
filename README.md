@@ -82,7 +82,7 @@ For inspections on required parameters use [this IntelliJ plugin](https://plugin
  
 ## Usage
 
-You can use either ksp or kapt to run this processor. See [here](https://github.com/google/ksp/blob/main/docs/why-ksp.md#comparison-to-kapt) for a comparison of ksp and kapt.
+You can use either ksp or kapt to run this processor. See [here](https://kotlinlang.org/docs/ksp-why-ksp.html#comparison-to-kapt) for a comparison of ksp and kapt.
 
  1.a) Add dependencies ([Kotlin Symbol Processing (KSP)](https://github.com/google/ksp)):
 
