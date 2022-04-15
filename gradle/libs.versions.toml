@@ -11,7 +11,7 @@ compileTesting = "1.4.8"
 junit = "5.8.2"
 strikt = "0.34.1"
 autoCommon = "1.1.2"
-intellijPlugin = "1.5.2"
+intellijPlugin = "1.5.3"
 
 [plugins]
 intellijPlugin = { id = "org.jetbrains.intellij", version.ref = "intellijPlugin" }
