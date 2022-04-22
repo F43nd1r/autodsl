@@ -9,7 +9,7 @@ import java.util.*
 import kotlin.jvm.internal.DefaultConstructorMarker
 import kotlin.properties.Delegates
 
-const val DEFAULTS_BITFLAGS_FIELD_NAME = "_defaultsBitFlags"
+const val DEFAULTS_BITFLAGS_FIELD_NAME = "_defaultsBitField"
 
 class DslGenerator<A, T : A, C : A>(
     private val kotlinVersion: KotlinVersion,
@@ -73,11 +73,16 @@ class DslGenerator<A, T : A, C : A>(
         val parameters = parameterFactory.getParameters(constructor)
         val type = clazz.asClassName()
         val builderType = type.withBuilderSuffix()
+        val bitFieldIndices = 0..parameters.size / 32
         buildFile(type.packageName, "${type.simpleName}Dsl") {
             addClass(builderType.simpleName) {
-                addProperty(DEFAULTS_BITFLAGS_FIELD_NAME, INT, KModifier.PRIVATE) {
-                    mutable(true)
-                    initializer("-1")
+                if (parameters.any { it.hasDefault }) {
+                    for (i in bitFieldIndices) {
+                        addProperty(DEFAULTS_BITFLAGS_FIELD_NAME + i, INT, KModifier.PRIVATE) {
+                            mutable(true)
+                            initializer("-1")
+                        }
+                    }
                 }
                 for (parameter in parameters) {
                     addParameterProperty(parameter, type)
@@ -95,30 +100,21 @@ class DslGenerator<A, T : A, C : A>(
                     returns(type)
                     parameters.filter { it.isMandatory }.groupBy { it.group }.forEach { (_, parameters) ->
                         addStatement("check(%L)·{ \"%L·must·be·assigned.\" }",
-                            parameters.map { codeBlock("%L != null", it.name) }.joinToCode(" || "),
+                            parameters.map { "%L != null".codeFmt(it.name) }.joinToCode(" || "),
                             parameters.joinToString(separator = ",·", prefix = if (parameters.size > 1) "One·of·" else "") { it.name }
                         )
                     }
                     if (parameters.any { it.hasDefault }) {
-                        val (markerExpression, markerParameter) = if (kotlinVersion.isAtLeast(1, 5)) {
-                            "%T::class.java" to DefaultConstructorMarker::class.asClassName()
-                        } else {
-                            "Class.forName(%S)" to DefaultConstructorMarker::class.java.name
-                        }
                         addStatement(
-                            "return %T::class.java.getConstructor(%L, %T::class.java, $markerExpression).newInstance(%L, %L, null)",
+                            "return %T::class.java.getConstructor(%L, %L, %L).newInstance(%L, %L, null)",
                             type,
                             parameters.map {
-                                CodeBlock.of(
-                                    "%T::class.%L",
-                                    it.typeName.toRawType().nonnull,
-                                    if (it.typeName.isNullable) "javaObjectType" else "java"
-                                )
-                            }.joinToCode(", "),
-                            INT,
-                            markerParameter,
+                                "%T::class.%L".codeFmt(it.typeName.toRawType().nonnull, if (it.typeName.isNullable) "javaObjectType" else "java")
+                            }.joinToCode(),
+                            bitFieldIndices.map { "%T::class.java".codeFmt(INT) }.joinToCode(),
+                            if (kotlinVersion.isAtLeast(1, 5)) "%T::class.java".codeFmt(DefaultConstructorMarker::class.asClassName())
+                            else "Class.forName(%S)".codeFmt(DefaultConstructorMarker::class.java.name),
                             parameters.map {
-                                CodeBlock.of(
                                     when {
                                         it.typeName.isNullable -> "%L"
                                         it.typeName == BOOLEAN -> "%L ?: false"
@@ -130,16 +126,15 @@ class DslGenerator<A, T : A, C : A>(
                                         it.typeName == FLOAT -> "%L ?: 0.0f"
                                         it.typeName == DOUBLE -> "%L ?: 0.0"
                                         else -> "%L"
-                                    }, it.name
-                                )
+                                    }.codeFmt(it.name)
                             }.joinToCode(),
-                            DEFAULTS_BITFLAGS_FIELD_NAME
+                            bitFieldIndices.map { "%L".codeFmt(DEFAULTS_BITFLAGS_FIELD_NAME + it) }.joinToCode()
                         )
                     } else {
                         addStatement(
                             "return %T(%L)",
                             type,
-                            parameters.map { CodeBlock.of(if (it.typeName.isNullable) "%L" else "%L!!", it.name) }.joinToCode()
+                            parameters.map { (if (it.typeName.isNullable) "%L" else "%L!!").codeFmt(it.name) }.joinToCode()
                         )
                     }
                 }
@@ -200,12 +195,16 @@ class DslGenerator<A, T : A, C : A>(
 
     private fun TypeSpecBuilder.addParameterProperty(parameter: Parameter, type: ClassName) = addProperty(parameter.name, parameter.typeName.nullable) {
         mutable(true)
-        delegate(
-            "%1T.observable(null)·{·_, _, _·-> %2L·= %2L and %3L }",
-            Delegates::class.asClassName(),
-            DEFAULTS_BITFLAGS_FIELD_NAME,
-            (1 shl parameter.index).inv()
-        )
+        if (parameter.hasDefault) {
+            delegate(
+                "%1T.observable(null)·{·_, _, _·-> %2L·= %2L and %3L }",
+                Delegates::class.asClassName(),
+                DEFAULTS_BITFLAGS_FIELD_NAME + (parameter.index / 32),
+                (1 shl parameter.index % 32).inv()
+            )
+        } else {
+            initializer("null")
+        }
         if (parameter.isMandatory) {
             addAnnotation(DslMandatory::class) {
                 useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
