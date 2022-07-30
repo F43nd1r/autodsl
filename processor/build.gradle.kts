@@ -8,8 +8,7 @@ dependencies {
     implementation(libs.ksp.api)
     implementation(projects.annotations)
     implementation(libs.kotlinpoet.ksp)
-    implementation(libs.kotlinpoet.metadataSpecs)
-    implementation(libs.kotlinpoet.classinspectorElements)
+    implementation(libs.kotlinpoet.metadata)
     implementation(libs.kotlinbard)
     implementation(kotlin("compiler-embeddable"))
 }
