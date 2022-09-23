@@ -11,14 +11,14 @@ dependencies {
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
-    version.set("2021.3")
+    version.set("2022.2.2")
     plugins.set(listOf("org.jetbrains.kotlin", "com.intellij.java"))
     updateSinceUntilBuild.set(false)
 }
 
 tasks {
     runIde {
-        jvmArgs("--add-exports", "java.base/jdk.internal.vm=ALL-UNNAMED")
+        jvmArgs("--add-exports", "java.base/jdk.internal.vm=ALL-UNNAMED", "-Xmx8G")
     }
 
     patchPluginXml {
