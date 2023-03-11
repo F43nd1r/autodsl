@@ -59,7 +59,7 @@ class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, p
             constructorElements.first { element ->
                 element.parameters.size == kmConstructor.valueParameters.size && (element.parameters zip kmConstructor.valueParameters).all { (e, k) ->
                     val eType = e.asType().asTypeName().mapToKotlin()
-                    val kType = k.type?.asTypeName()?.nonnull
+                    val kType = k.type.asTypeName().nonnull
                     if (eType is ParameterizedTypeName && kType is ParameterizedTypeName) {
                         //Invariant kotlin parameters are variant in java, just check erased type
                         eType.rawType == kType.rawType
@@ -101,7 +101,7 @@ class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, p
             }
         }
 
-    override fun Parameter.getTypeName(): TypeName = kmValueParameter.type!!.asTypeName()
+    override fun Parameter.getTypeName(): TypeName = kmValueParameter.type.asTypeName()
 
     override fun Parameter.getName(): String = kmValueParameter.name
 

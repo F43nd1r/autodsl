@@ -2,12 +2,6 @@ plugins {
     `kotlin-dsl`
 }
 
-repositories {
-    mavenCentral()
-    google()
-    gradlePluginPortal()
-}
-
 dependencies {
     implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
 
@@ -19,8 +13,8 @@ dependencies {
     implementation(libs.ksp.gradle)
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = "1.8"
+kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
     }
 }

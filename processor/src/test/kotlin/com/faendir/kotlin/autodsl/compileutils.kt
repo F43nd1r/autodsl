@@ -82,6 +82,6 @@ fun compileKapt(
 private fun KotlinCompilation.Result.callEval() = classLoader.loadClass("EvalKt").declaredMethods
     .first { it.name[0] != '$' /* skip jacoco added function */ }
     .run {
-        trySetAccessible()
+        isAccessible = true
         invoke(null)
     }

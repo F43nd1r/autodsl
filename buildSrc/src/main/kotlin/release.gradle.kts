@@ -1,7 +1,4 @@
-import java.time.Duration
-
 plugins {
-    id("repositories")
     id("org.jetbrains.dokka")
     id("fr.brouillard.oss.gradle.jgitver")
     id("io.github.gradle-nexus.publish-plugin")

@@ -5,6 +5,10 @@ plugins {
     kotlin
 }
 
+repositories {
+    mavenCentral()
+}
+
 dependencies {
     implementation(projects.annotations)
 }
