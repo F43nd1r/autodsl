@@ -10,5 +10,5 @@ dependencies {
     implementation(libs.kotlinpoet.ksp)
     implementation(libs.kotlinpoet.metadata)
     implementation(libs.kotlinbard)
-    implementation(kotlin("compiler-embeddable", "1.8.0"))
+    implementation(kotlin("compiler-embeddable", "1.9.0"))
 }
