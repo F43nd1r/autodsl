@@ -2,6 +2,7 @@ package com.faendir.kotlin.autodsl
 
 import com.faendir.kotlin.autodsl.kapt.KaptProcessor
 import com.faendir.kotlin.autodsl.ksp.KspProcessorProvider
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile.Companion.fromPath
 import com.tschuchort.compiletesting.SourceFile.Companion.kotlin
@@ -14,10 +15,10 @@ import strikt.assertions.isEqualTo
 import java.io.File
 import kotlin.test.assertNotNull
 
-internal val KotlinCompilation.Result.workingDir: File
+internal val JvmCompilationResult.workingDir: File
     get() = outputDirectory.parentFile!!
 
-val KotlinCompilation.Result.kspGeneratedSources: List<File>
+val JvmCompilationResult.kspGeneratedSources: List<File>
     get() = workingDir.resolve("ksp/sources/kotlin").collectSourceFiles()
 
 private fun File.collectSourceFiles(): List<File> {
@@ -50,13 +51,13 @@ fun compileKsp(
         symbolProcessorProviders = listOf(KspProcessorProvider())
     }
     val pass1 = compilation.compile()
-    expectThat(pass1).get(KotlinCompilation.Result::exitCode).isEqualTo(expect)
+    expectThat(pass1).get(JvmCompilationResult::exitCode).isEqualTo(expect)
     val pass2 = KotlinCompilation().apply {
         inheritClassPath = true
         jvmTarget = "1.8"
         sources = compilation.sources + pass1.kspGeneratedSources.map { fromPath(it) } + kotlin("Eval.kt", eval)
     }.compile()
-    expectThat(pass2).get(KotlinCompilation.Result::exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
+    expectThat(pass2).get(JvmCompilationResult::exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
     pass2.callEval()
     return pass1.kspGeneratedSources
 }
@@ -72,14 +73,14 @@ fun compileKapt(
         sources = listOf(kotlin("Source.kt", source), kotlin("Eval.kt", eval))
         annotationProcessors = listOf(KaptProcessor())
     }.compile()
-    expectThat(result).get(KotlinCompilation.Result::exitCode).isEqualTo(expect)
+    expectThat(result).get(JvmCompilationResult::exitCode).isEqualTo(expect)
     if (expect == KotlinCompilation.ExitCode.OK) {
         result.callEval()
     }
     return result.generatedFiles.filter { it.extension == "kt" }
 }
 
-private fun KotlinCompilation.Result.callEval() = classLoader.loadClass("EvalKt").declaredMethods
+private fun JvmCompilationResult.callEval() = classLoader.loadClass("EvalKt").declaredMethods
     .first { it.name[0] != '$' /* skip jacoco added function */ }
     .run {
         isAccessible = true

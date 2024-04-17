@@ -1,15 +1,14 @@
 [versions]
-kotlin = "1.9.0"
+kotlin = "1.9.23"
 dokka = "1.9.20"
 jgitver = "0.10.0-rc03"
 nexusPublish = "2.0.0"
-ksp = "1.9.0-1.0.11"
-kotlinPoet = "1.14.2"
+ksp = "1.9.23-1.0.19"
+kotlinPoet = "1.16.0"
 kotlinBard = "0.5.1"
-compileTesting = "1.5.0"
+compileTesting = "0.4.1"
 junit = "5.10.2"
 strikt = "0.34.1"
-autoCommon = "1.1.2"
 intellijPlugin = "1.17.3"
 
 [plugins]
@@ -27,5 +26,5 @@ dokka-core = { module = "org.jetbrains.dokka:dokka-core", version.ref = "dokka" 
 jgitver = { module = "gradle.plugin.fr.brouillard.oss.gradle:gradle-jgitver-plugin", version.ref = "jgitver" }
 nexusPublish = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexusPublish" }
 junit = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
-kotlin-compileTesting = { module = "com.github.tschuchortdev:kotlin-compile-testing-ksp", version.ref = "compileTesting" }
+kotlin-compileTesting = { module = "dev.zacsweers.kctfork:ksp", version.ref = "compileTesting" }
 strikt = { module = "io.strikt:strikt-core", version.ref = "strikt" }
