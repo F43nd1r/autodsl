@@ -1,9 +1,9 @@
 [versions]
-kotlin = "1.9.23"
+kotlin = "2.0.20"
 dokka = "1.9.20"
 jgitver = "0.10.0-rc03"
 nexusPublish = "2.0.0"
-ksp = "1.9.23-1.0.20"
+ksp = "2.0.10-1.0.24"
 kotlinPoet = "1.16.0"
 kotlinBard = "0.6.0"
 compileTesting = "0.4.1"
