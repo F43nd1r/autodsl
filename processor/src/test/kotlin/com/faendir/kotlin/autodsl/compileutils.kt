@@ -6,7 +6,7 @@ import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile.Companion.fromPath
 import com.tschuchort.compiletesting.SourceFile.Companion.kotlin
-import com.tschuchort.compiletesting.symbolProcessorProviders
+import com.tschuchort.compiletesting.configureKsp
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.DynamicTest
 import strikt.api.expectThat
@@ -48,7 +48,9 @@ fun compileKsp(
         inheritClassPath = true
         jvmTarget = "1.8"
         sources = listOf(kotlin("Source.kt", source))
-        symbolProcessorProviders = listOf(KspProcessorProvider())
+        configureKsp(useKsp2 = true) {
+            symbolProcessorProviders.add(KspProcessorProvider())
+        }
     }
     val pass1 = compilation.compile()
     expectThat(pass1).get(JvmCompilationResult::exitCode).isEqualTo(expect)
@@ -71,6 +73,7 @@ fun compileKapt(
         inheritClassPath = true
         jvmTarget = "1.8"
         sources = listOf(kotlin("Source.kt", source), kotlin("Eval.kt", eval))
+        useKapt4 = true
         annotationProcessors = listOf(KaptProcessor())
     }.compile()
     expectThat(result).get(JvmCompilationResult::exitCode).isEqualTo(expect)
