@@ -8,7 +8,7 @@ kotlinPoet = "1.16.0"
 kotlinBard = "0.6.0"
 compileTesting = "0.4.1"
 junit = "5.11.0"
-strikt = "0.34.1"
+strikt = "0.35.1"
 intellijPlugin = "1.17.4"
 
 [plugins]
