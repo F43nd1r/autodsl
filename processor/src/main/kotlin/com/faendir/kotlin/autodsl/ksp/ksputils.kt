@@ -1,7 +1,13 @@
 package com.faendir.kotlin.autodsl.ksp
 
-import com.google.devtools.ksp.symbol.*
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSAnnotation
+import com.google.devtools.ksp.symbol.KSDeclaration
+import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSTypeReference
+import com.google.devtools.ksp.symbol.Variance
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
@@ -32,7 +38,12 @@ fun KSTypeReference.asTypeName() = resolve().asTypeName()
 
 fun KSType.asTypeName(): TypeName {
     var name: TypeName = asClassName()
-    if (arguments.isNotEmpty()) {
+    if (declaration.qualifiedName?.asString()?.matches(Regex("kotlin\\.Function\\d+")) == true) {
+        val arguments = arguments.mapNotNullTo(mutableListOf()) { it.type?.asTypeName() }
+        val receiver = if (annotations.any { it.couldBe(ExtensionFunctionType::class) }) arguments.removeFirst() else null
+        val returnType = arguments.removeLast()
+        name = LambdaTypeName.get(receiver = receiver, returnType = returnType, parameters = arguments.toTypedArray())
+    } else if (arguments.isNotEmpty()) {
         name = (name as ClassName).parameterizedBy(arguments.map {
             when (it.variance) {
                 Variance.STAR -> STAR

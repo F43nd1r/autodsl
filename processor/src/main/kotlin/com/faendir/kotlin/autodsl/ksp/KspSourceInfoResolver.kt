@@ -1,17 +1,23 @@
 package com.faendir.kotlin.autodsl.ksp
 
-import com.faendir.kotlin.autodsl.*
+import com.faendir.kotlin.autodsl.SourceInfoResolver
 import com.google.devtools.ksp.isInternal
 import com.google.devtools.ksp.isPublic
 import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.symbol.*
+import com.google.devtools.ksp.symbol.ClassKind
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
+import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSValueParameter
+import com.google.devtools.ksp.symbol.Modifier
 import com.google.devtools.ksp.validate
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
-import com.google.devtools.ksp.getConstructors as superGetConstructors
 import com.faendir.kotlin.autodsl.ksp.asClassName as asClassNameUtil
+import com.google.devtools.ksp.getConstructors as superGetConstructors
 
 class KspSourceInfoResolver(private val resolver: Resolver) : SourceInfoResolver<KSAnnotated, KSClassDeclaration, KSFunctionDeclaration, KSValueParameter> {
     private fun getClassesWithAnnotation(annotation: String): List<KSClassDeclaration> =
@@ -23,8 +29,7 @@ class KspSourceInfoResolver(private val resolver: Resolver) : SourceInfoResolver
 
     override fun KSClassDeclaration.getClassKind(): ClassKind = classKind
 
-    override fun KSAnnotated.hasAnnotation(annotation: KClass<out Annotation>): Boolean =
-        annotations.filter { it.couldBe(annotation) }.any { it.isEqualTo(annotation) }
+    override fun KSAnnotated.hasAnnotation(annotation: KClass<out Annotation>): Boolean = findAnnotation(annotation) != null
 
     override fun <T : Annotation> KSAnnotated.getAnnotationTypeProperty(annotation: KClass<T>, property: KProperty1<T, KClass<*>>): ClassName? =
         (findAnnotation(annotation)?.arguments?.firstOrNull { it.name?.asString() == property.name }?.value as? KSType?)?.asClassNameUtil()

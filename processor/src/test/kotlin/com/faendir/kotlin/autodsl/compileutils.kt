@@ -46,7 +46,7 @@ fun compileKsp(
 ): List<File> {
     val compilation = KotlinCompilation().apply {
         inheritClassPath = true
-        jvmTarget = "1.8"
+        jvmTarget = "17"
         sources = listOf(kotlin("Source.kt", source))
         configureKsp(useKsp2 = true) {
             symbolProcessorProviders.add(KspProcessorProvider())
@@ -56,7 +56,7 @@ fun compileKsp(
     expectThat(pass1).get(JvmCompilationResult::exitCode).isEqualTo(expect)
     val pass2 = KotlinCompilation().apply {
         inheritClassPath = true
-        jvmTarget = "1.8"
+        jvmTarget = "17"
         sources = compilation.sources + pass1.kspGeneratedSources.map { fromPath(it) } + kotlin("Eval.kt", eval)
     }.compile()
     expectThat(pass2).get(JvmCompilationResult::exitCode).isEqualTo(KotlinCompilation.ExitCode.OK)
@@ -71,7 +71,7 @@ fun compileKapt(
 ): List<File> {
     val result = KotlinCompilation().apply {
         inheritClassPath = true
-        jvmTarget = "1.8"
+        jvmTarget = "17"
         sources = listOf(kotlin("Source.kt", source), kotlin("Eval.kt", eval))
         useKapt4 = true
         annotationProcessors = listOf(KaptProcessor())
@@ -84,7 +84,7 @@ fun compileKapt(
 }
 
 private fun JvmCompilationResult.callEval() = classLoader.loadClass("EvalKt").declaredMethods
-    .first { it.name[0] != '$' /* skip jacoco added function */ }
+    .first { !it.name.contains('$') /* skip generated functions */ }
     .run {
         isAccessible = true
         invoke(null)

@@ -4,9 +4,16 @@ package com.faendir.kotlin.autodsl.kapt
 
 import com.faendir.kotlin.autodsl.SourceInfoResolver
 import com.faendir.kotlin.autodsl.nonnull
+import com.faendir.kotlin.autodsl.toRawType
 import com.google.devtools.ksp.symbol.ClassKind
-import com.squareup.kotlinpoet.*
-import com.squareup.kotlinpoet.metadata.*
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.asTypeName
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
+import com.squareup.kotlinpoet.metadata.toKmClass
 import kotlinx.metadata.KmClass
 import kotlinx.metadata.KmConstructor
 import kotlinx.metadata.KmValueParameter
@@ -36,7 +43,7 @@ class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, p
     override fun getClassesWithAnnotation(annotation: Type): List<Type> =
         roundEnv.getElementsAnnotatedWith(annotation.element).filterIsInstance<TypeElement>().map { Type(it) }
 
-    override fun Type.getClassKind(): ClassKind = when(kmClass.kind) {
+    override fun Type.getClassKind(): ClassKind = when (kmClass.kind) {
         kotlinx.metadata.ClassKind.CLASS -> ClassKind.CLASS
         kotlinx.metadata.ClassKind.INTERFACE -> ClassKind.INTERFACE
         kotlinx.metadata.ClassKind.ENUM_CLASS -> ClassKind.ENUM_CLASS
@@ -69,6 +76,8 @@ class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, p
                     if (eType is ParameterizedTypeName && kType is ParameterizedTypeName) {
                         //Invariant kotlin parameters are variant in java, just check erased type
                         eType.rawType == kType.rawType
+                    } else if (eType is ParameterizedTypeName && kType is LambdaTypeName) {
+                        eType.typeArguments.map { it.toRawType() } == listOfNotNull(kType.receiver) + kType.parameters.map { it.type } + kType.returnType
                     } else {
                         eType == kType
                     }
