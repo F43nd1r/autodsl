@@ -41,7 +41,7 @@ fun compile(
 
 fun compileKsp(
     @Language("kotlin") source: String,
-    @Language("kotlin") eval: String = "fun test() { }",
+    @Language("kotlin") eval: String,
     expect: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK
 ): List<File> {
     val compilation = KotlinCompilation().apply {
@@ -66,7 +66,7 @@ fun compileKsp(
 
 fun compileKapt(
     @Language("kotlin") source: String,
-    @Language("kotlin") eval: String = "fun test() { }",
+    @Language("kotlin") eval: String,
     expect: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK
 ): List<File> {
     val result = KotlinCompilation().apply {
