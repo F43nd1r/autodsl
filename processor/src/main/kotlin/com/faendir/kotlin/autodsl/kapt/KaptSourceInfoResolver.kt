@@ -6,6 +6,7 @@ import com.faendir.kotlin.autodsl.toRawType
 import com.faendir.kotlin.autodsl.withoutAnnotations
 import com.google.devtools.ksp.symbol.ClassKind
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.DelicateKotlinPoetApi
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
@@ -19,22 +20,27 @@ import com.squareup.kotlinpoet.metadata.classinspectors.ElementsClassInspector
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment
+import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.MirroredTypeException
+import javax.lang.model.type.TypeMirror
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 
+@OptIn(DelicateKotlinPoetApi::class)
 class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, private val roundEnv: RoundEnvironment) :
     SourceInfoResolver<Annotated, Type, Constructor, Parameter> {
+    private fun Set<Element>.mapToTypes() = filterIsInstance<TypeElement>().map { Type(it, it.toTypeSpec()) }
+
     override fun getClassesWithAnnotation(annotation: KClass<out Annotation>): List<Type> =
-        roundEnv.getElementsAnnotatedWith(annotation.java).filterIsInstance<TypeElement>().map { Type(it, it.toTypeSpec()) }
+        roundEnv.getElementsAnnotatedWith(annotation.java).mapToTypes()
 
     override fun getClassesWithAnnotation(annotation: Type): List<Type> =
-        roundEnv.getElementsAnnotatedWith(annotation.element).filterIsInstance<TypeElement>().map { Type(it, it.toTypeSpec()) }
+        roundEnv.getElementsAnnotatedWith(annotation.element).mapToTypes()
 
     override fun Type.getClassKind(): ClassKind = when (typeSpec.kind) {
         TypeSpec.Kind.CLASS -> {
@@ -50,13 +56,13 @@ class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, p
         TypeSpec.Kind.INTERFACE -> ClassKind.INTERFACE
     }
 
+    override fun Annotated.hasAnnotation(annotation: KClass<out Annotation>): Boolean = getAnnotation(annotation) != null
+
     override fun <T : Annotation> Annotated.getAnnotationTypeProperty(annotation: KClass<T>, property: KProperty1<T, KClass<*>>): ClassName? = try {
         getAnnotation(annotation)?.let(property)?.asClassName()
     } catch (e: MirroredTypeException) {
         (e.typeMirror.asTypeName() as? ClassName)
     }?.mapToKotlin()
-
-    override fun Annotated.hasAnnotation(annotation: KClass<out Annotation>): Boolean = getAnnotation(annotation) != null
 
     override fun <T : Annotation, V> Annotated.getAnnotationProperty(annotation: KClass<T>, property: KProperty1<T, V>): V? =
         getAnnotation(annotation)?.let(property)
@@ -75,6 +81,7 @@ class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, p
                         //Invariant kotlin parameters are variant in java, just check erased type
                         eType.rawType == kType.rawType
                     } else if (eType is ParameterizedTypeName && kType is LambdaTypeName) {
+                        // Lambdas are kotlin.FunctionX types in java
                         eType.typeArguments.map { it.toRawType() } == listOfNotNull(kType.receiver) + kType.parameters.map { it.type.withoutAnnotations() } + kType.returnType
                     } else {
                         eType == kType
@@ -101,25 +108,18 @@ class KaptSourceInfoResolver(private val processingEnv: ProcessingEnvironment, p
 
     override fun Type.asClassName(): ClassName = element.asClassName()
 
-    override fun Parameter.getTypeDeclaration(): Type? {
-        val element = processingEnv.typeUtils.asElement(element.asType()) as? TypeElement
-        val typeSpec = try {
-            element?.toTypeSpec()
-        } catch (e: IllegalStateException) {
+    private fun TypeMirror.toType(): Type? = (processingEnv.typeUtils.asElement(this) as? TypeElement)?.let { element ->
+        try {
+            Type(element, element.toTypeSpec())
+        } catch (e: Exception) {
             null
         }
-        return if (element != null && typeSpec != null) Type(element, typeSpec) else null
     }
 
+    override fun Parameter.getTypeDeclaration(): Type? = element.asType().toType()
+
     override fun Parameter.getTypeArguments(): List<Type> =
-        (element.asType() as DeclaredType).typeArguments.mapNotNull {
-            try {
-                val typeElement = processingEnv.typeUtils.asElement(it) as TypeElement
-                Type(typeElement, typeElement.toTypeSpec())
-            } catch (e: Exception) {
-                null
-            }
-        }
+        (element.asType() as DeclaredType).typeArguments.mapNotNull { it.toType() }
 
     override fun Parameter.getTypeName(): TypeName = parameterSpec.type
 
