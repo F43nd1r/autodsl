@@ -1,3 +1,6 @@
+[![](https://img.shields.io/maven-central/v/com.faendir.kotlin.autodsl/processor?style=for-the-badge)](https://search.maven.org/search?q=com.faendir.kotlin.autodsl)
+
+
 # AutoDSL for Kotlin
 
 Auto-generates [DSL (Domain Specific Language)](https://en.wikipedia.org/wiki/Domain-specific_language)
