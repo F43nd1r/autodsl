@@ -19,6 +19,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.toTypeName
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import com.google.devtools.ksp.getConstructors as superGetConstructors
@@ -67,7 +68,7 @@ class KspSourceInfoResolver(private val resolver: Resolver) : SourceInfoResolver
     override fun KSValueParameter.getTypeArguments(): List<KSClassDeclaration> =
         type.resolve().arguments.mapNotNull { it.type?.resolve()?.declaration as? KSClassDeclaration }
 
-    override fun KSValueParameter.getTypeName(): TypeName = type.resolve().asTypeName()
+    override fun KSValueParameter.getTypeName(): TypeName = type.toTypeName()
 
     override fun KSValueParameter.getName(): String = name!!.asString()
 
