@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.0.20"
+kotlin = "2.0.21"
 dokka = "1.9.20"
 jgitver = "0.10.0-rc03"
 nexusPublish = "2.0.0"
