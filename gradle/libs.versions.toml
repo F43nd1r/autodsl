@@ -7,7 +7,7 @@ ksp = "2.0.21-1.0.27"
 kotlinPoet = "1.18.1"
 kotlinBard = "0.6.0"
 compileTesting = "0.5.1"
-junit = "5.11.3"
+junit = "5.11.4"
 strikt = "0.35.1"
 intellijPlugin = "1.17.4"
 
