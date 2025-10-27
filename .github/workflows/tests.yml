@@ -14,7 +14,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Run tests
         uses: burrunan/gradle-cache-action@v3
         with:
