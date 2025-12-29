@@ -48,7 +48,7 @@ fun compileKsp(
         inheritClassPath = true
         jvmTarget = "17"
         sources = listOf(kotlin("Source.kt", source))
-        configureKsp(useKsp2 = true) {
+        configureKsp {
             symbolProcessorProviders.add(KspProcessorProvider())
         }
     }
