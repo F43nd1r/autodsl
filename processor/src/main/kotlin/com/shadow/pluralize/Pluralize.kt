@@ -45,7 +45,7 @@ fun String.singularize(count: Int): String {
 }
 
 private fun String.pluralizer(): String {
-    if (unCountable().contains(this.toLowerCase())) return this
+    if (unCountable().contains(this.lowercase())) return this
     val rule = pluralizeRules().last { Pattern.compile(it.component1(), Pattern.CASE_INSENSITIVE).matcher(this).find() }
     var found = Pattern.compile(rule.component1(), Pattern.CASE_INSENSITIVE).matcher(this).replaceAll(rule.component2())
     val endsWith = exceptions().firstOrNull { this.endsWith(it.component1()) }
@@ -56,7 +56,7 @@ private fun String.pluralizer(): String {
 }
 
 private fun String.singularizer(): String {
-    if (unCountable().contains(this.toLowerCase())) {
+    if (unCountable().contains(this.lowercase())) {
         return this
     }
     val exceptions = exceptions().firstOrNull() { this.equals(it.component2(), true) }
