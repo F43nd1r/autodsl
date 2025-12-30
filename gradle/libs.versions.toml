@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.3.0"
-dokka = "2.0.0"
+dokka = "2.1.0"
 jgitver = "0.10.0-rc03"
 nexusPublish = "2.0.0"
 ksp = "2.3.4"
