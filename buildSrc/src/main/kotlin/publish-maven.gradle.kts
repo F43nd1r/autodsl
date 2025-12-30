@@ -14,7 +14,7 @@ tasks.withType<DokkaTask> {
 
 val javadocJar = tasks.register<Jar>("javadocJar") {
     group = "documentation"
-    from(tasks["dokkaJavadoc"])
+    from(tasks["dokkaGenerate"])
     archiveClassifier.set("javadoc")
 }
 

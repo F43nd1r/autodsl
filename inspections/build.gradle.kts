@@ -1,4 +1,3 @@
-@Suppress("DSL_SCOPE_VIOLATION") // TODO remove when https://youtrack.jetbrains.com/issue/KTIJ-19369 is fixed
 plugins {
     alias(libs.plugins.intellijPlugin)
     java
@@ -7,20 +6,37 @@ plugins {
 
 repositories {
     mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
 dependencies {
     implementation(projects.annotations)
+
+    // See https://github.com/JetBrains/gradle-intellij-plugin/
+    intellijPlatform {
+        intellijIdea("2025.3")
+        bundledPlugins(listOf("org.jetbrains.kotlin", "com.intellij.java"))
+    }
 }
 
-// See https://github.com/JetBrains/gradle-intellij-plugin/
-intellij {
-    version.set("2022.2.2")
-    plugins.set(listOf("org.jetbrains.kotlin", "com.intellij.java"))
-    updateSinceUntilBuild.set(false)
+intellijPlatform {
+    pluginConfiguration {
+        ideaVersion {
+            untilBuild = provider { null }
+        }
+    }
+    publishing {
+        token = project.findProperty("intellijToken") as? String ?: System.getenv("INTELLIJ_TOKEN")
+    }
 }
 
 tasks {
+    buildSearchableOptions {
+        enabled = false
+    }
+
     runIde {
         jvmArgs("--add-exports", "java.base/jdk.internal.vm=ALL-UNNAMED", "-Xmx8G")
     }
@@ -28,6 +44,8 @@ tasks {
     patchPluginXml {
         changeNotes.set(
             """
+        <b>v3.0</b><br>
+        Kotlin K2 support<br>
         <b>v2.2</b><br>
         Introduced mandatory groups, of which only one is necessary<br>
         <b>v2.0</b><br>
@@ -36,10 +54,6 @@ tasks {
         Initial Release<br>
         """
         )
-    }
-
-    publishPlugin {
-        token.set(project.findProperty("intellijToken") as? String ?: System.getenv("INTELLIJ_TOKEN"))
     }
 
     register("publish") {

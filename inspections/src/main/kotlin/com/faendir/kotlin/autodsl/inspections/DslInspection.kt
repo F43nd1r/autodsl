@@ -8,20 +8,27 @@ import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
-import org.jetbrains.kotlin.builtins.getReceiverTypeFromFunctionType
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.idea.caches.resolve.analyze
-import org.jetbrains.kotlin.idea.caches.resolve.analyzeAndGetResult
-import org.jetbrains.kotlin.idea.debugger.sequence.psi.resolveType
+import org.jetbrains.kotlin.analysis.api.KaContextParameterApi
+import org.jetbrains.kotlin.analysis.api.KaSession
+import org.jetbrains.kotlin.analysis.api.analyze
+import org.jetbrains.kotlin.analysis.api.annotations.KaAnnotation
+import org.jetbrains.kotlin.analysis.api.annotations.renderAsSourceCode
+import org.jetbrains.kotlin.analysis.api.components.expandedSymbol
+import org.jetbrains.kotlin.analysis.api.components.memberScope
+import org.jetbrains.kotlin.analysis.api.symbols.KaNamedFunctionSymbol
+import org.jetbrains.kotlin.analysis.api.symbols.KaPropertySymbol
+import org.jetbrains.kotlin.analysis.api.types.KaFunctionType
+import org.jetbrains.kotlin.analysis.api.types.KaType
+import org.jetbrains.kotlin.analysis.api.types.symbol
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.annotations.argumentValue
-import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
-import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.psi.KtBinaryExpression
+import org.jetbrains.kotlin.psi.KtFunctionLiteral
+import org.jetbrains.kotlin.psi.KtLambdaExpression
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
+import org.jetbrains.kotlin.psi.KtPsiFactory
+import org.jetbrains.kotlin.psi.KtVisitorVoid
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -31,15 +38,18 @@ class DslInspection : LocalInspectionTool() {
         return object : KtVisitorVoid() {
 
             override fun visitLambdaExpression(lambda: KtLambdaExpression) {
-                val receiver = lambda.analyze().getType(lambda)?.getReceiverTypeFromFunctionType()
-                if (receiver.isDSLintClass()) {
-                    visitDslLambda(holder, lambda, receiver)
+                analyze(lambda) {
+                    val receiver = (lambda.expressionType as? KaFunctionType)?.receiverType
+                    if (receiver.isDSLintClass()) {
+                        visitDslLambda(holder, lambda, receiver)
+                    }
                 }
             }
         }
     }
 
-    private fun visitDslLambda(holder: ProblemsHolder, lambda: KtLambdaExpression, receiver: KotlinType) {
+    context(session: KaSession)
+    private fun visitDslLambda(holder: ProblemsHolder, lambda: KtLambdaExpression, receiver: KaType) {
         val mandatory = receiver.getMandatoryProperties()
         val body = lambda.bodyExpression ?: return
         val present = body.statements.filterIsInstance<KtBinaryExpression>()
@@ -57,7 +67,7 @@ class DslInspection : LocalInspectionTool() {
         }
     }
 
-    inner class InsertMissingFix(private val missing: String) : LocalQuickFix {
+    class InsertMissingFix(private val missing: String) : LocalQuickFix {
         override fun getFamilyName(): String = "Insert missing assignment"
 
         override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
@@ -76,22 +86,26 @@ class DslInspection : LocalInspectionTool() {
         override fun availableInBatchMode(): Boolean = false
     }
 
-    private fun KotlinType.getMandatoryProperties(): Map<String, List<String>> {
-        val descriptors = memberScope.getContributedDescriptors(DescriptorKindFilter.FUNCTIONS)
-        return (descriptors.filterIsInstance<PropertyDescriptor>().map { it.setter?.annotations to it.name.identifier }
-                + descriptors.filterIsInstance<FunctionDescriptor>().map { it.annotations to it.name.identifier })
-            .mapNotNull { (annotations, name) -> annotations?.findAnnotation(FqName(DslMandatory::class.java.name))?.let { (it.findGroup() ?: name) to name } }
+    @OptIn(KaContextParameterApi::class)
+    context(_: KaSession)
+    private fun KaType.getMandatoryProperties(): Map<String, List<String>> {
+        val descriptors = this.expandedSymbol?.memberScope?.callables.orEmpty().toList()
+        return (descriptors.filterIsInstance<KaPropertySymbol>().map { it.setter?.annotations to it.name.identifier }
+                + descriptors.filterIsInstance<KaNamedFunctionSymbol>().map { it.annotations to it.name.identifier })
+            .mapNotNull { (annotations, name) -> annotations?.get(DSL_MANDATORY)?.firstOrNull()?.let { (it.findGroup() ?: name) to name } }
             .groupBy({ it.first }, { it.second })
     }
 
-    private fun AnnotationDescriptor.findGroup(): String? = argumentValue("group")?.value?.toString()?.takeIf { it.isNotEmpty() }
+    private fun KaAnnotation.findGroup(): String? = arguments.find { it.name.identifier == "group" }?.expression?.renderAsSourceCode()?.takeIf { it.isNotEmpty() }
 }
 
+private val DSL_INSPECT = ClassId.topLevel(FqName(DslInspect::class.java.name))
+private val DSL_MANDATORY = ClassId.topLevel(FqName(DslMandatory::class.java.name))
+
 @ExperimentalContracts
-private fun KotlinType?.isDSLintClass(): Boolean {
+private fun KaType?.isDSLintClass(): Boolean {
     contract {
         returns(true) implies (this@isDSLintClass != null)
     }
-    return this?.constructor?.declarationDescriptor?.annotations?.hasAnnotation(FqName(DslInspect::class.java.name))
-        ?: false
+    return this?.symbol?.annotations?.contains(DSL_INSPECT) ?: false
 }

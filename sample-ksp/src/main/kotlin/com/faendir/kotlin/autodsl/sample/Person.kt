@@ -2,7 +2,7 @@ package com.faendir.kotlin.autodsl.sample
 
 import com.faendir.kotlin.autodsl.AutoDsl
 import com.faendir.kotlin.autodsl.AutoDslConstructor
-import kotlin.math.max
+import com.faendir.kotlin.autodsl.AutoDslRequired
 
 @DslMarker
 annotation class MyDsl
@@ -15,7 +15,11 @@ class Person(
         val name: String = "Max",
         val age: Int,
         val address: Address?,
-        val friends: List<Person> = emptyList()
+        val friends: List<Person> = emptyList(),
+        @AutoDslRequired("n")
+    val givenName: String? = null,
+        @AutoDslRequired("n")
+    val streetName: String? = null,
     )
 
 

@@ -7,6 +7,7 @@ class Test {
     fun test() {
         person {
             name = "Juan"
+            givenName = "Juanno"
             age = 34
             address {
                 street = "200 Celebration Bv"
@@ -19,10 +20,12 @@ class Test {
             friend {
                 name = "Arturo"
                 age = 28
+                givenName = "A"
             }
             friend {
                 name = "Tiwa"
                 age = 30
+                streetName = "Lil T"
             }
         }
     }

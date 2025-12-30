@@ -33,6 +33,9 @@
                 level="ERROR"
                 implementationClass="com.faendir.kotlin.autodsl.inspections.DslInspection"/>
     </extensions>
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <supportsKotlinPluginMode supportsK1="false" supportsK2="true" />
+    </extensions>
 
     <actions>
         <!-- Add your actions here -->
