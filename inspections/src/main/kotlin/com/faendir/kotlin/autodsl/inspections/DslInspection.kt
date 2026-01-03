@@ -24,10 +24,12 @@ import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtBinaryExpression
+import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFunctionLiteral
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
+import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtVisitorVoid
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -54,7 +56,7 @@ class DslInspection : LocalInspectionTool() {
         val body = lambda.bodyExpression ?: return
         val present = body.statements.filterIsInstance<KtBinaryExpression>()
             .filter { it.operationToken == KtTokens.EQ }
-            .mapNotNull { (it.left as? KtNameReferenceExpression)?.getReferencedName() }
+            .mapNotNull { extractPropertyName(it.left) }
         mandatory.values.forEach { group ->
             if (present.none { group.contains(it) }) {
                 holder.registerProblem(
@@ -64,6 +66,22 @@ class DslInspection : LocalInspectionTool() {
                     *group.map { InsertMissingFix(it) }.toTypedArray()
                 )
             }
+        }
+    }
+
+    private fun extractPropertyName(expression: Any?): String? {
+        return when (expression) {
+            // Handle direct assignment: propertyName = value
+            is KtNameReferenceExpression -> expression.getReferencedName()
+            // Handle this assignment: this.propertyName = value
+            is KtDotQualifiedExpression -> {
+                if (expression.receiverExpression is KtThisExpression) {
+                    (expression.selectorExpression as? KtNameReferenceExpression)?.getReferencedName()
+                } else {
+                    null
+                }
+            }
+            else -> null
         }
     }
 
