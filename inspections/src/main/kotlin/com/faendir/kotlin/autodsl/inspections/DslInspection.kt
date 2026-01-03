@@ -75,7 +75,9 @@ class DslInspection : LocalInspectionTool() {
             is KtNameReferenceExpression -> expression.getReferencedName()
             // Handle this assignment: this.propertyName = value
             is KtDotQualifiedExpression -> {
-                if (expression.receiverExpression is KtThisExpression) {
+                val receiver = expression.receiverExpression as? KtThisExpression
+                // Only accept unqualified 'this' (not this@Label)
+                if (receiver != null && receiver.getLabelName() == null) {
                     (expression.selectorExpression as? KtNameReferenceExpression)?.getReferencedName()
                 } else {
                     null
