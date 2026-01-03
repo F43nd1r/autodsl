@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
+import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFunctionLiteral
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
@@ -69,7 +70,7 @@ class DslInspection : LocalInspectionTool() {
         }
     }
 
-    private fun extractPropertyName(expression: Any?): String? {
+    private fun extractPropertyName(expression: KtExpression?): String? {
         return when (expression) {
             // Handle direct assignment: propertyName = value
             is KtNameReferenceExpression -> expression.getReferencedName()
