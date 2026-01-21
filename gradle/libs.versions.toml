@@ -10,7 +10,7 @@ compileTesting = "0.12.1"
 junit = "6.0.2"
 strikt = "0.35.1"
 intellijPlugin = "2.10.5"
-kotlinx-serialization = "1.9.0"
+kotlinx-serialization = "1.10.0"
 
 [plugins]
 intellijPlugin = { id = "org.jetbrains.intellij.platform", version.ref = "intellijPlugin" }
