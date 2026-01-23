@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
+import java.util.Locale
 
 @Suppress("UNCHECKED_CAST")
 val <T : TypeName> T.nonnull: T
@@ -44,8 +45,14 @@ fun TypeName.withoutAnnotations(): TypeName = when (this) {
     else -> this
 }
 
-fun ClassName.withBuilderSuffix() = ClassName(packageName, "${simpleName}Builder")
+fun ClassName.withBuilderSuffix() = withSuffix("Builder")
 
-fun TypeName.withBuilderSuffix() = toRawType().withBuilderSuffix()
+fun ClassName.withImplSuffix() = withSuffix("Impl")
+
+private fun ClassName.withSuffix(suffix: String) = ClassName(packageName, "$simpleName$suffix")
 
 fun TypeName.asLambdaReceiver() = LambdaTypeName.get(receiver = this, returnType = Unit::class.asClassName())
+
+val ClassName.packagePrefix get() = if (packageName.isEmpty()) "" else "$packageName."
+
+val ClassName.builderFunction get() = simpleName.replaceFirstChar { it.lowercase(Locale.getDefault()) }

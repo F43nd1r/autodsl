@@ -11,7 +11,7 @@ class MarkerTest {
 
                 annotation class MyDslMarker
 
-                @AutoDsl(MyDslMarker::class)
+                @AutoDsl(MyDslMarker::class, $SAFETY)
                 class Entity(val a: String)
             """,
         """
@@ -21,7 +21,7 @@ class MarkerTest {
                 fun test() {
                     expectThat(EntityBuilder::class.java).get { getAnnotation(MyDslMarker::class.java) }.isNotNull()
                     expectThat(entity {
-                        a = "Hi"
+                        a = "Hi"$RETURN_SAFE
                     }.a).isEqualTo("Hi")
                 }
             """
@@ -33,7 +33,7 @@ class MarkerTest {
                 import com.faendir.kotlin.autodsl.AutoDsl
                 import org.junit.jupiter.api.Disabled
 
-                @AutoDsl(Disabled::class)
+                @AutoDsl(Disabled::class, $SAFETY)
                 class Entity(val a: String)
             """,
         """
@@ -45,7 +45,7 @@ class MarkerTest {
                 fun test() {
                     expectThat(EntityBuilder::class.java).get { getAnnotation(Disabled::class.java) }.isNotNull()
                     expectThat(entity {
-                        a = "Hi"
+                        a = "Hi"$RETURN_SAFE
                     }.a).isEqualTo("Hi")
                 }
             """

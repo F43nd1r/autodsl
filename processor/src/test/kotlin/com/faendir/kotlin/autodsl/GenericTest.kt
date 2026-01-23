@@ -8,7 +8,7 @@ class GenericTest {
     fun `star projection`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: List<*>)
             """,
         """
@@ -16,7 +16,7 @@ class GenericTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = listOf("Hi")
+                        a = listOf("Hi")$RETURN_SAFE
                     }.a).isEqualTo(listOf("Hi"))
                 }
             """
@@ -26,7 +26,7 @@ class GenericTest {
     fun invariant() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: List<Any>)
             """,
         """
@@ -34,7 +34,7 @@ class GenericTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = listOf("Hi")
+                        a = listOf("Hi")$RETURN_SAFE
                     }.a).isEqualTo(listOf("Hi"))
                 }
             """
@@ -44,7 +44,7 @@ class GenericTest {
     fun `out projection`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: List<out Any>)
             """,
         """
@@ -52,7 +52,7 @@ class GenericTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = listOf("Hi")
+                        a = listOf("Hi")$RETURN_SAFE
                     }.a).isEqualTo(listOf("Hi"))
                 }
             """
@@ -62,7 +62,7 @@ class GenericTest {
     fun `in projection`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: Class<in String>)
             """,
         """
@@ -70,7 +70,7 @@ class GenericTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = String::class.java
+                        a = String::class.java$RETURN_SAFE
                     }.a).isEqualTo(String::class.java)
                 }
             """
@@ -80,7 +80,7 @@ class GenericTest {
     fun `java type`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: List<Class<*>>)
             """,
         """
@@ -88,7 +88,7 @@ class GenericTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = listOf(String::class.java)
+                        a = listOf(String::class.java)$RETURN_SAFE
                     }.a).isEqualTo(listOf(String::class.java))
                 }
             """

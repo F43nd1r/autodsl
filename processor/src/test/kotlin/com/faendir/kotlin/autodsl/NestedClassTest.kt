@@ -9,7 +9,7 @@ class NestedClassTest {
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 class Outer {
-                    @AutoDsl
+                    @AutoDsl($SAFETY)
                     class Entity(val a: String)
                 }
             """,
@@ -18,7 +18,7 @@ class NestedClassTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = "Hi"
+                        a = "Hi"$RETURN_SAFE
                     }.a).isEqualTo("Hi")
                 }
             """
@@ -28,7 +28,7 @@ class NestedClassTest {
     fun `nested class as value`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: A) {
                     data class A(val a: String)
                 }
@@ -38,7 +38,7 @@ class NestedClassTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = Entity.A("Hi")
+                        a = Entity.A("Hi")$RETURN_SAFE
                     }){
                         get(Entity::a).isEqualTo(Entity.A("Hi"))
                     }

@@ -8,6 +8,8 @@ import com.tschuchort.compiletesting.SourceFile.Companion.fromPath
 import com.tschuchort.compiletesting.SourceFile.Companion.kotlin
 import com.tschuchort.compiletesting.configureKsp
 import org.intellij.lang.annotations.Language
+import org.junit.jupiter.api.DynamicContainer
+import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.DynamicTest
 import strikt.api.expectThat
 import strikt.assertions.containsExactlyInAnyOrder
@@ -25,10 +27,31 @@ private fun File.collectSourceFiles(): List<File> {
     return walkTopDown().filter { it.isFile }.toList()
 }
 
+val RETURN_SAFE = "{RETURN_SAFE}"
+val SAFETY = "{SAFETY}"
+
 fun compile(
     @Language("kotlin") source: String,
     @Language("kotlin") eval: String = "fun test() { }",
     expect: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK
+): List<DynamicNode> = if (source.contains(SAFETY) || eval.contains(RETURN_SAFE)) listOf(
+    DynamicContainer.dynamicContainer("safe", basicCompile(
+        source.replace(SAFETY, "safe = com.faendir.kotlin.autodsl.SafetyType.Safe"),
+        eval.replace(RETURN_SAFE, "\nthis"),
+        expect
+    )),
+    DynamicContainer.dynamicContainer("unsafe", basicCompile(
+        source.replace(SAFETY, ""),
+        eval.replace(RETURN_SAFE, ""),
+        expect
+    ))
+) else basicCompile(source, eval, expect)
+
+
+fun basicCompile(
+    @Language("kotlin") source: String,
+    @Language("kotlin") eval: String,
+    expect: KotlinCompilation.ExitCode,
 ): List<DynamicTest> {
     val compileKsp by lazy { compileKsp(source, eval, expect) }
     val compileKapt by lazy { compileKapt(source, eval, expect) }

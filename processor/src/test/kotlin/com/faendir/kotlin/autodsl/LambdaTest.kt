@@ -8,7 +8,7 @@ class LambdaTest {
     fun `simple lambda`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: () -> String)
             """,
         """
@@ -16,7 +16,7 @@ class LambdaTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = {"Hi"}
+                        a = {"Hi"}$RETURN_SAFE
                     }.a()).isEqualTo("Hi")
                 }
             """
@@ -26,7 +26,7 @@ class LambdaTest {
     fun `lambda with parameter`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: (name: String) -> String)
             """,
         """
@@ -34,7 +34,7 @@ class LambdaTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = { "Hi ${'$'}it" }
+                        a = { "Hi ${'$'}it" }$RETURN_SAFE
                     }.a("F43nd1r")).isEqualTo("Hi F43nd1r")
                 }
             """
@@ -44,7 +44,7 @@ class LambdaTest {
     fun `lambda with receiver`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: String.() -> String)
             """,
         """
@@ -52,7 +52,7 @@ class LambdaTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = { "Hi ${'$'}this" }
+                        a = { "Hi ${'$'}this" }$RETURN_SAFE
                     }.a("F43nd1r")).isEqualTo("Hi F43nd1r")
                 }
             """
@@ -62,14 +62,14 @@ class LambdaTest {
     fun `lambda with default value`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: (name: String) -> String = { "Hi ${'$'}it" })
             """,
         """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
-                    expectThat(entity {}.a("F43nd1r")).isEqualTo("Hi F43nd1r")
+                    expectThat(entity {$RETURN_SAFE}.a("F43nd1r")).isEqualTo("Hi F43nd1r")
                 }
             """
     )
@@ -78,14 +78,14 @@ class LambdaTest {
     fun `lambda with receiver and default value`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: String.() -> String = { "Hi ${'$'}this" })
             """,
         """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
-                    expectThat(entity {}.a("F43nd1r")).isEqualTo("Hi F43nd1r")
+                    expectThat(entity {$RETURN_SAFE}.a("F43nd1r")).isEqualTo("Hi F43nd1r")
                 }
             """
     )

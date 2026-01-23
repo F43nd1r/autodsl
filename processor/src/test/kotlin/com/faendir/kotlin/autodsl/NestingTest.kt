@@ -7,9 +7,9 @@ class NestingTest {
     fun `basic nesting`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: Entity2)
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity2(val b: String)
             """,
         """
@@ -18,8 +18,8 @@ class NestingTest {
                 fun test() {
                     expectThat(entity {
                         a {
-                            b = "Hi"
-                        }
+                            b = "Hi"$RETURN_SAFE
+                        }$RETURN_SAFE
                     }.a.b).isEqualTo("Hi")
                 }
             """
@@ -29,11 +29,11 @@ class NestingTest {
     fun `deep nesting`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: Entity2)
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity2(val b: Entity3)
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity3(val c: String)
             """,
         """
@@ -43,9 +43,9 @@ class NestingTest {
                     expectThat(entity {
                         a {
                             b {
-                                c = "Hi"
-                            }
-                        }
+                                c = "Hi"$RETURN_SAFE
+                            }$RETURN_SAFE
+                        }$RETURN_SAFE
                     }.a.b.c).isEqualTo("Hi")
                 }
             """
@@ -55,9 +55,9 @@ class NestingTest {
     fun `collection nesting`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: List<Entity2>, val b: Collection<Entity2>, val c: Set<Entity2>)
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 data class Entity2(val d: String)
             """,
         """
@@ -67,17 +67,17 @@ class NestingTest {
                 fun test() {
                     expectThat(entity {
                         a {
-                            d = "a"
+                            d = "a"$RETURN_SAFE
                         }
                         a {
-                            d = "a2"
+                            d = "a2"$RETURN_SAFE
                         }
                         b {
-                            d = "b"
+                            d = "b"$RETURN_SAFE
                         }
                         c {
-                            d = "c"
-                        }
+                            d = "c"$RETURN_SAFE
+                        }$RETURN_SAFE
                     }){
                         with(Entity::a) {
                             isA<List<Entity2>>()
@@ -100,31 +100,31 @@ class NestingTest {
     fun `automatic singularization`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(
                     val friends: List<Entity2>, 
                     val men: List<Entity2>, 
                     val lives: List<Entity2>, 
                     val camelCasedNames: List<Entity2>
                 )
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 data class Entity2(val a: String)
             """,
         """
                 fun test() {
                     entity {
                         friend {
-                            a = "a"
+                            a = "a"$RETURN_SAFE
                         }
                         man {
-                            a = "b"
+                            a = "b"$RETURN_SAFE
                         }
                         life {
-                            a = "c"
+                            a = "c"$RETURN_SAFE
                         }
                         camelCasedName {
-                            a = "d"
-                        }
+                            a = "d"$RETURN_SAFE
+                        }$RETURN_SAFE
                     }
                 }
             """
@@ -135,17 +135,17 @@ class NestingTest {
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 import com.faendir.kotlin.autodsl.AutoDslSingular
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(@AutoDslSingular("clazz") val classes: List<Entity2>)
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 data class Entity2(val a: String)
             """,
         """
                 fun test() {
                     entity {
                         clazz {
-                            a = "a"
-                        }
+                            a = "a"$RETURN_SAFE
+                        }$RETURN_SAFE
                     }
                 }
             """
