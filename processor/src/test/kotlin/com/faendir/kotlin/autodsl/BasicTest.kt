@@ -8,7 +8,7 @@ class BasicTest {
     fun `basic values`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: String)
             """,
         """
@@ -16,7 +16,7 @@ class BasicTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = "Hi"
+                        a = "Hi"$RETURN_SAFE
                     }.a).isEqualTo("Hi")
                 }
             """
@@ -26,7 +26,7 @@ class BasicTest {
     fun `primitive values`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(
                     val a: Boolean, 
                     val b: Byte,
@@ -49,7 +49,7 @@ class BasicTest {
                         e = 4L
                         f = 'X'
                         g = 5.0f
-                        h = 6.0
+                        h = 6.0$RETURN_SAFE
                     }){
                         get(Entity::a).isEqualTo(true)
                         get(Entity::b).isEqualTo(1)
@@ -69,16 +69,16 @@ class BasicTest {
         """
                 package com.faendir.test
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: String)
             """,
         """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
-                import com.faendir.test.entity
+                import com.faendir.test.*
                 fun test() {
                     expectThat(entity {
-                        a = "Hi"
+                        a = "Hi"$RETURN_SAFE
                     }.a).isEqualTo("Hi")
                 }
             """
@@ -89,7 +89,7 @@ class BasicTest {
         """
                 package com.faendir.test
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity {
                     val a: String
                     constructor(a: String) {
@@ -100,10 +100,10 @@ class BasicTest {
         """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
-                import com.faendir.test.entity
+                import com.faendir.test.*
                 fun test() {
                     expectThat(entity {
-                        a = "Hi"
+                        a = "Hi"$RETURN_SAFE
                     }.a).isEqualTo("Hi")
                 }
             """

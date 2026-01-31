@@ -9,7 +9,7 @@ class FailTest {
     fun `interface`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 interface Entity
             """,
         expect = COMPILATION_ERROR
@@ -19,7 +19,7 @@ class FailTest {
     fun `enum class`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 enum class Entity { A, B, X }
             """,
         expect = COMPILATION_ERROR
@@ -29,7 +29,7 @@ class FailTest {
     fun `object`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 object Entity
             """,
         expect = COMPILATION_ERROR
@@ -39,7 +39,7 @@ class FailTest {
     fun `abstract class`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 abstract class Entity
             """,
         expect = COMPILATION_ERROR
@@ -49,7 +49,7 @@ class FailTest {
     fun `private constructor`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity private constructor()
             """,
         expect = COMPILATION_ERROR

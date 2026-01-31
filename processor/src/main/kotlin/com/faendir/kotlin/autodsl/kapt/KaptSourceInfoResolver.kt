@@ -143,6 +143,10 @@ class Type(internal val element: TypeElement, internal val typeSpec: TypeSpec) :
     override fun toString(): String {
         return element.toString()
     }
+
+    override fun equals(other: Any?) = this === other || (other is Type && this.element == other.element)
+
+    override fun hashCode() = element.hashCode()
 }
 
 class Constructor(internal val element: ExecutableElement, internal val constructorSpec: FunSpec, internal val isPrimary: Boolean) : Annotated {

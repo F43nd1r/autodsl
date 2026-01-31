@@ -8,7 +8,7 @@ class MetaAnnotationTest {
     fun `meta annotation`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 annotation class MyAutoDsl
 
                 @MyAutoDsl
@@ -19,7 +19,7 @@ class MetaAnnotationTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = "Hi"
+                        a = "Hi"$RETURN_SAFE
                     }.a).isEqualTo("Hi")
                 }
             """
@@ -32,7 +32,7 @@ class MetaAnnotationTest {
 
                 annotation class MyDslMarker
 
-                @AutoDsl(MyDslMarker::class)
+                @AutoDsl(MyDslMarker::class, $SAFETY)
                 annotation class MyAutoDsl
 
                 @MyAutoDsl
@@ -45,7 +45,7 @@ class MetaAnnotationTest {
                 fun test() {
                     expectThat(EntityBuilder::class.java).get { getAnnotation(MyDslMarker::class.java) }.isNotNull()
                     expectThat(entity {
-                        a = "Hi"
+                        a = "Hi"$RETURN_SAFE
                     }.a).isEqualTo("Hi")
                 }
             """

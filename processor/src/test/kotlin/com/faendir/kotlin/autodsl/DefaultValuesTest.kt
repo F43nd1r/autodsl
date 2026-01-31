@@ -8,14 +8,14 @@ class DefaultValuesTest {
     fun `default value`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: String = "Hi")
             """,
         """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
-                    expectThat(entity {}.a).isEqualTo("Hi")
+                    expectThat(entity {$RETURN_SAFE}.a).isEqualTo("Hi")
                 }
             """
     )
@@ -24,7 +24,7 @@ class DefaultValuesTest {
     fun `primitive default value`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(
                     val a: Boolean = true, 
                     val b: Byte = 1,
@@ -39,7 +39,7 @@ class DefaultValuesTest {
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
-                    expectThat(entity {}){
+                    expectThat(entity {$RETURN_SAFE}){
                         get(Entity::a).isEqualTo(true)
                         get(Entity::b).isEqualTo(1)
                         get(Entity::c).isEqualTo(2)
@@ -57,7 +57,7 @@ class DefaultValuesTest {
     fun `nullable primitive values with default value present`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(
                     val a: Boolean?, 
                     val b: Byte?,
@@ -81,7 +81,7 @@ class DefaultValuesTest {
                         e = 4L
                         f = 'X'
                         g = 5.0f
-                        h = 6.0
+                        h = 6.0$RETURN_SAFE
                     }){
                         get(Entity::a).isEqualTo(true)
                         get(Entity::b).isEqualTo(1)
@@ -101,7 +101,7 @@ class DefaultValuesTest {
     fun `default value after required`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: String, val b: String = "Hi")
             """,
         """
@@ -109,7 +109,7 @@ class DefaultValuesTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        a = "a"
+                        a = "a"$RETURN_SAFE
                     }.b).isEqualTo("Hi")
                 }
             """
@@ -119,7 +119,7 @@ class DefaultValuesTest {
     fun `default value before required`() = compile(
         """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(val a: String = "Hi", val b: String)
             """,
         """
@@ -127,7 +127,7 @@ class DefaultValuesTest {
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {
-                        b = "b"
+                        b = "b"$RETURN_SAFE
                     }.a).isEqualTo("Hi")
                 }
             """
@@ -137,7 +137,7 @@ class DefaultValuesTest {
     fun `default values with over 32 parameters`() = compile(
     """
                 import com.faendir.kotlin.autodsl.AutoDsl
-                @AutoDsl
+                @AutoDsl($SAFETY)
                 class Entity(
                     val a1: String = "a1",
                     val a2: String = "a2",
@@ -178,7 +178,7 @@ class DefaultValuesTest {
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
-                    val entity = entity {}
+                    val entity = entity {$RETURN_SAFE}
                     expectThat(entity.a1).isEqualTo("a1")
                     expectThat(entity.a2).isEqualTo("a2")
                     expectThat(entity.a3).isEqualTo("a3")
