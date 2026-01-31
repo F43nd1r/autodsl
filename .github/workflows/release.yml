@@ -20,6 +20,10 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ github.ref }}
+      - name: Run tests
+        uses: burrunan/gradle-cache-action@v3
+        with:
+            arguments: check --no-daemon
       - name: Publish
         uses: burrunan/gradle-cache-action@v3
         with:

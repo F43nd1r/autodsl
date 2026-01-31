@@ -71,9 +71,9 @@ class DslInspection : LocalInspectionTool() {
                 holder.registerProblem(
                     lambda.functionLiteral.rBrace!!,
                     if (group.size == 1) {
-                        "Missing property: ${group.first()}"
+                        "Missing property: ${group.first().name}"
                     } else {
-                        "Missing property: One of ${group.joinToString()}"
+                        "Missing property: One of ${group.joinToString { it.name }}"
                     },
                     *group.map { InsertMissingFix(it.name, it.hasNestedBuilder) }.toTypedArray(),
                 )
