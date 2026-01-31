@@ -16,16 +16,21 @@ import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.annotations.KaAnnotation
 import org.jetbrains.kotlin.analysis.api.annotations.renderAsSourceCode
 import org.jetbrains.kotlin.analysis.api.components.expandedSymbol
+import org.jetbrains.kotlin.analysis.api.components.isFunctionType
+import org.jetbrains.kotlin.analysis.api.components.isUnitType
 import org.jetbrains.kotlin.analysis.api.components.memberScope
 import org.jetbrains.kotlin.analysis.api.symbols.KaNamedFunctionSymbol
 import org.jetbrains.kotlin.analysis.api.symbols.KaPropertySymbol
+import org.jetbrains.kotlin.analysis.api.symbols.name
 import org.jetbrains.kotlin.analysis.api.types.KaFunctionType
 import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.analysis.api.types.symbol
+import org.jetbrains.kotlin.idea.codeinsight.utils.ConvertLambdaToReferenceUtils.getCallReferencedName
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtBinaryExpression
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFunctionLiteral
@@ -60,13 +65,9 @@ class DslInspection : LocalInspectionTool() {
     ) {
         val mandatory = receiver.getMandatoryProperties()
         val body = lambda.bodyExpression ?: return
-        val present =
-            body.statements
-                .filterIsInstance<KtBinaryExpression>()
-                .filter { it.operationToken == KtTokens.EQ }
-                .mapNotNull { extractPropertyName(it.left) }
+        val present = body.statements.mapNotNull { extractPropertyName(it) }
         mandatory.values.forEach { group ->
-            if (present.none { group.contains(it) }) {
+            if (present.none { group.any { prop -> prop.name == it } }) {
                 holder.registerProblem(
                     lambda.functionLiteral.rBrace!!,
                     if (group.size == 1) {
@@ -74,7 +75,7 @@ class DslInspection : LocalInspectionTool() {
                     } else {
                         "Missing property: One of ${group.joinToString()}"
                     },
-                    *group.map { InsertMissingFix(it) }.toTypedArray(),
+                    *group.map { InsertMissingFix(it.name, it.hasNestedBuilder) }.toTypedArray(),
                 )
             }
         }
@@ -82,20 +83,34 @@ class DslInspection : LocalInspectionTool() {
 
     private fun extractPropertyName(expression: KtExpression?): String? =
         when (expression) {
-            // Handle direct assignment: propertyName = value
-            is KtNameReferenceExpression -> {
-                expression.getReferencedName()
+            // Handle assignments: x = value
+            is KtBinaryExpression -> {
+                if (expression.operationToken == KtTokens.EQ) {
+                    extractPropertyName(expression.left)
+                } else {
+                    null
+                }
             }
 
-            // Handle this assignment: this.propertyName = value
+            // Handle this assignment/call: this.propertyName
             is KtDotQualifiedExpression -> {
                 val receiver = expression.receiverExpression as? KtThisExpression
                 // Only accept unqualified 'this' (not this@Label)
                 if (receiver != null && receiver.getLabelName() == null) {
-                    (expression.selectorExpression as? KtNameReferenceExpression)?.getReferencedName()
+                    extractPropertyName(expression.selectorExpression)
                 } else {
                     null
                 }
+            }
+
+            // Handle property: propertyName = value
+            is KtNameReferenceExpression -> {
+                expression.getReferencedName()
+            }
+
+            // Handle nested DSL call: propertyName { ... }
+            is KtCallExpression -> {
+                expression.getCallReferencedName()
             }
 
             else -> {
@@ -105,6 +120,7 @@ class DslInspection : LocalInspectionTool() {
 
     class InsertMissingFix(
         private val missing: String,
+        private val nestedBuilder: Boolean,
     ) : LocalQuickFix {
         override fun getFamilyName(): String = "Insert missing assignment"
 
@@ -117,8 +133,13 @@ class DslInspection : LocalInspectionTool() {
                 val factory = KtPsiFactory(project)
                 body.add(factory.createNewLine())
                 body.add(factory.createNameIdentifier(missing))
-                body.add(factory.createEQ())
-                body.add(factory.createExpression("TODO()"))
+                if (nestedBuilder) {
+                    body.add(factory.createWhiteSpace())
+                    body.add(factory.createExpression("{ TODO() }"))
+                } else {
+                    body.add(factory.createEQ())
+                    body.add(factory.createExpression("TODO()"))
+                }
             }
         }
 
@@ -129,18 +150,46 @@ class DslInspection : LocalInspectionTool() {
 
     @OptIn(KaContextParameterApi::class)
     context(_: KaSession)
-    private fun KaType.getMandatoryProperties(): Map<String, List<String>> {
+    private fun KaType.getMandatoryProperties(): Map<String, List<MandatoryProperty>> {
         val descriptors =
             this.expandedSymbol
                 ?.memberScope
                 ?.callables
+                ?.toList()
                 .orEmpty()
-                .toList()
-        return (
-            descriptors.filterIsInstance<KaPropertySymbol>().map { it.setter?.annotations to it.name.identifier } +
-                descriptors.filterIsInstance<KaNamedFunctionSymbol>().map { it.annotations to it.name.identifier }
-        ).mapNotNull { (annotations, name) -> annotations?.get(DSL_MANDATORY)?.firstOrNull()?.let { (it.findGroup() ?: name) to name } }
-            .groupBy({ it.first }, { it.second })
+        val relevantDescriptors =
+            descriptors.filter {
+                it is KaPropertySymbol || (it is KaNamedFunctionSymbol && it.isBuilderFunction())
+            }
+        val mandatoryProps =
+            relevantDescriptors.groupBy { it.name?.identifier }.mapNotNull { (name, descriptors) ->
+                if (name == null) return@mapNotNull null
+                val dslMandatoryAnnotation =
+                    descriptors
+                        .filterIsInstance<KaPropertySymbol>()
+                        .firstOrNull()
+                        ?.setter
+                        ?.annotations
+                        ?.get(DSL_MANDATORY)
+                        ?.firstOrNull() ?: return@mapNotNull null
+                val groupName = dslMandatoryAnnotation.findGroup() ?: name
+                val hasNestedBuilder = descriptors.any { it is KaNamedFunctionSymbol }
+                groupName to MandatoryProperty(name, hasNestedBuilder)
+            }
+        return mandatoryProps.groupBy({ it.first }, { it.second })
+    }
+
+    @OptIn(KaContextParameterApi::class)
+    context(_: KaSession)
+    private fun KaNamedFunctionSymbol.isBuilderFunction(): Boolean {
+        if (valueParameters.size != 1) return false
+        val parameterType = valueParameters.first().returnType
+        if (!parameterType.isFunctionType) return false
+        val typeArguments = (parameterType as KaFunctionType).typeArguments
+        if (typeArguments.size != 2) return false
+        if (typeArguments.first().type?.isDSLintClass() != true) return false
+        if (typeArguments.last().type?.isUnitType != true) return false
+        return true
     }
 
     private fun KaAnnotation.findGroup(): String? =
@@ -151,6 +200,11 @@ class DslInspection : LocalInspectionTool() {
             ?.renderAsSourceCode()
             ?.takeIf { it.isNotEmpty() }
 }
+
+data class MandatoryProperty(
+    val name: String,
+    val hasNestedBuilder: Boolean,
+)
 
 private val DSL_INSPECT = ClassId.topLevel(FqName(DslInspect::class.java.name))
 private val DSL_MANDATORY = ClassId.topLevel(FqName(DslMandatory::class.java.name))

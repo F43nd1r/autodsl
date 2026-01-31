@@ -1,3 +1,5 @@
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+
 plugins {
     alias(libs.plugins.intellijPlugin)
     java
@@ -16,9 +18,12 @@ dependencies {
 
     // See https://github.com/JetBrains/gradle-intellij-plugin/
     intellijPlatform {
-        intellijIdea("2025.3")
+        intellijIdea(libs.versions.intellijIdea)
         bundledPlugins(listOf("org.jetbrains.kotlin", "com.intellij.java"))
+        testFramework(TestFrameworkType.Bundled)
     }
+
+    testImplementation(libs.junit.vintage)
 }
 
 intellijPlatform {
@@ -52,7 +57,7 @@ tasks {
         Updated for autodsl 2.0<br>
         <b>v1.0</b><br>
         Initial Release<br>
-        """
+        """,
         )
     }
 
