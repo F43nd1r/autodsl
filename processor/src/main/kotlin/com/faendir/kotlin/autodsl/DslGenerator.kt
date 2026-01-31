@@ -32,12 +32,12 @@ import kotlin.properties.Delegates
 
 const val DEFAULTS_BITFLAGS_FIELD_NAME = "_defaultsBitField"
 
-class DslGenerator<A, T : A, C : A>(
+class DslGenerator<A, T : A, C : A, P : A>(
     private val kotlinVersion: KotlinVersion,
     private val logger: Logger<T>,
     private val codeGenerator: CodeWriter<T>,
-    private val resolver: SourceInfoResolver<A, T, C, *>,
-) {
+    resolver: SourceInfoResolver<A, T, C, P>,
+) : SourceInfoResolver<A, T, C, P> by resolver {
     private val parameterFactory = ParameterFactory(resolver)
 
     private fun error(
@@ -48,47 +48,45 @@ class DslGenerator<A, T : A, C : A>(
     }
 
     fun process(): List<T> =
-        resolver
-            .getClassesWithAnnotation(AutoDsl::class)
-            .flatMap { processClass(it, resolver.run { it.getAnnotationTypeProperty(AutoDsl::class, AutoDsl::dslMarker) }) }
+        getClassesWithAnnotation(AutoDsl::class)
+            .flatMap { processClass(it, it.getAnnotationTypeProperty(AutoDsl::class, AutoDsl::dslMarker)) }
 
     private fun processClass(
         clazz: T,
         markerType: ClassName?,
-    ): List<T> =
-        resolver.run {
-            when (clazz.getClassKind()) {
-                ClassKind.INTERFACE -> {
-                    error("must not be an interface", clazz)
-                }
+    ): List<T> {
+        when (clazz.getClassKind()) {
+            ClassKind.INTERFACE -> {
+                error("must not be an interface", clazz)
+            }
 
-                ClassKind.ENUM_CLASS -> {
-                    error("must not be an enum class", clazz)
-                }
+            ClassKind.ENUM_CLASS -> {
+                error("must not be an enum class", clazz)
+            }
 
-                ClassKind.ENUM_ENTRY -> {
-                    error("must not be an enum entry", clazz)
-                }
+            ClassKind.ENUM_ENTRY -> {
+                error("must not be an enum entry", clazz)
+            }
 
-                ClassKind.OBJECT -> {
-                    error("must not be an object", clazz)
-                }
+            ClassKind.OBJECT -> {
+                error("must not be an object", clazz)
+            }
 
-                ClassKind.ANNOTATION_CLASS -> {
-                    val deferred = resolver.getClassesWithAnnotation(clazz).flatMap { processClass(it, markerType) }
-                    if (deferred.isNotEmpty()) {
-                        return deferred + clazz
-                    }
-                }
-
-                ClassKind.CLASS -> {
-                    if (!generate(clazz, markerType)) {
-                        return listOf(clazz)
-                    }
+            ClassKind.ANNOTATION_CLASS -> {
+                val deferred = getClassesWithAnnotation(clazz).flatMap { processClass(it, markerType) }
+                if (deferred.isNotEmpty()) {
+                    return deferred + clazz
                 }
             }
-            emptyList()
+
+            ClassKind.CLASS -> {
+                if (!generate(clazz, markerType)) {
+                    return listOf(clazz)
+                }
+            }
         }
+        return emptyList()
+    }
 
     /**
      * returns true if class generation was successful
@@ -96,116 +94,115 @@ class DslGenerator<A, T : A, C : A>(
     private fun generate(
         clazz: T,
         markerType: ClassName?,
-    ): Boolean =
-        resolver.run {
-            if (clazz.isAbstract()) {
-                error("must not be abstract", clazz)
-                return false
-            }
-            val constructors = clazz.getConstructors().filter { it.isAccessible() }
-            if (constructors.isEmpty()) {
-                error("must have at least one public or internal constructor", clazz)
-                return false
-            }
-            val constructor =
-                constructors.firstOrNull { it.hasAnnotation(AutoDslConstructor::class) }
-                    ?: clazz.getPrimaryConstructor()
-                    ?: constructors.first()
-            if (!constructor.isValid()) {
-                // defer processing
-                return false
-            }
-            val parameters = parameterFactory.getParameters(constructor)
-            val type = clazz.asClassName()
-            val builderType = type.withBuilderSuffix()
-            val bitFieldIndices = 0..parameters.size / 32
-            buildFile(type.packageName, "${type.simpleName}Dsl") {
-                addClass(builderType.simpleName) {
-                    if (parameters.any { it.hasDefault }) {
-                        for (i in bitFieldIndices) {
-                            addProperty(DEFAULTS_BITFLAGS_FIELD_NAME + i, INT, KModifier.PRIVATE) {
-                                mutable(true)
-                                initializer("-1")
-                            }
-                        }
-                    }
-                    for (parameter in parameters) {
-                        addParameterProperty(parameter, type)
-                        addParameterBuilderStyleSetter(parameter, builderType, type)
-                        if (parameter.collectionType != null) {
-                            addParameterBuilderStyleVarargSetter(parameter, builderType, type)
-                            if (parameter.hasNestedDsl) {
-                                addParameterNestedAdder(parameter)
-                            }
-                        } else if (parameter.hasNestedDsl) {
-                            addParameterNestedSetter(parameter)
-                        }
-                    }
-                    addFunction("build") {
-                        returns(type)
-                        parameters.filter { it.isMandatory }.groupBy { it.group }.forEach { (_, parameters) ->
-                            addStatement(
-                                "check(%L)·{ \"%L·must·be·assigned.\" }",
-                                parameters.map { "%L != null".codeFmt(it.name) }.joinToCode(" || "),
-                                parameters.joinToString(separator = ",·", prefix = if (parameters.size > 1) "One·of·" else "") { it.name },
-                            )
-                        }
-                        if (parameters.any { it.hasDefault }) {
-                            addStatement(
-                                "return %T::class.java.getConstructor(%L, %L, %L).newInstance(%L, %L, null)",
-                                type,
-                                parameters
-                                    .map {
-                                        "%T::class.%L".codeFmt(
-                                            it.typeName.toRawType().nonnull,
-                                            if (it.typeName.isNullable) "javaObjectType" else "java",
-                                        )
-                                    }.joinToCode(),
-                                bitFieldIndices.map { "%T::class.java".codeFmt(INT) }.joinToCode(),
-                                if (kotlinVersion.isAtLeast(1, 5)) {
-                                    "%T::class.java".codeFmt(DefaultConstructorMarker::class.asClassName())
-                                } else {
-                                    "Class.forName(%S)".codeFmt(DefaultConstructorMarker::class.java.name)
-                                },
-                                parameters
-                                    .map {
-                                        when {
-                                            it.typeName.isNullable -> "%L"
-                                            it.typeName == BOOLEAN -> "%L ?: false"
-                                            it.typeName == BYTE -> "%L ?: 0"
-                                            it.typeName == SHORT -> "%L ?: 0"
-                                            it.typeName == INT -> "%L ?: 0"
-                                            it.typeName == LONG -> "%L ?: 0"
-                                            it.typeName == CHAR -> "%L ?: '\\u0000'"
-                                            it.typeName == FLOAT -> "%L ?: 0.0f"
-                                            it.typeName == DOUBLE -> "%L ?: 0.0"
-                                            else -> "%L"
-                                        }.codeFmt(it.name)
-                                    }.joinToCode(),
-                                bitFieldIndices.map { "%L".codeFmt(DEFAULTS_BITFLAGS_FIELD_NAME + it) }.joinToCode(),
-                            )
-                        } else {
-                            addStatement(
-                                "return %T(%L)",
-                                type,
-                                parameters.map { (if (it.typeName.isNullable) "%L" else "%L!!").codeFmt(it.name) }.joinToCode(),
-                            )
-                        }
-                    }
-                    addAnnotation(DslInspect::class)
-                    if (markerType != null && markerType != Annotation::class.asClassName()) {
-                        addAnnotation(markerType)
-                    }
-                }
-                addFunction(type.simpleName.replaceFirstChar { it.lowercase(Locale.getDefault()) }) {
-                    addModifiers(KModifier.INLINE)
-                    addParameter("initializer", builderType.asLambdaReceiver())
-                    addStatement("return %T().apply(initializer).build()", builderType)
-                    returns(type)
-                }
-            }.writeTo(clazz, codeGenerator)
-            return true
+    ): Boolean {
+        if (clazz.isAbstract()) {
+            error("must not be abstract", clazz)
+            return false
         }
+        val constructors = clazz.getConstructors().filter { it.isAccessible() }
+        if (constructors.isEmpty()) {
+            error("must have at least one public or internal constructor", clazz)
+            return false
+        }
+        val constructor =
+            constructors.firstOrNull { it.hasAnnotation(AutoDslConstructor::class) }
+                ?: clazz.getPrimaryConstructor()
+                ?: constructors.first()
+        if (!constructor.isValid()) {
+            // defer processing
+            return false
+        }
+        val parameters = parameterFactory.getParameters(constructor)
+        val type = clazz.asClassName()
+        val builderType = type.withBuilderSuffix()
+        val bitFieldIndices = 0..parameters.size / 32
+        buildFile(type.packageName, "${type.simpleName}Dsl") {
+            addClass(builderType.simpleName) {
+                if (parameters.any { it.hasDefault }) {
+                    for (i in bitFieldIndices) {
+                        addProperty(DEFAULTS_BITFLAGS_FIELD_NAME + i, INT, KModifier.PRIVATE) {
+                            mutable(true)
+                            initializer("-1")
+                        }
+                    }
+                }
+                for (parameter in parameters) {
+                    addParameterProperty(parameter, type)
+                    addParameterBuilderStyleSetter(parameter, builderType, type)
+                    if (parameter.collectionType != null) {
+                        addParameterBuilderStyleVarargSetter(parameter, builderType, type)
+                        if (parameter.hasNestedDsl) {
+                            addParameterNestedAdder(parameter)
+                        }
+                    } else if (parameter.hasNestedDsl) {
+                        addParameterNestedSetter(parameter)
+                    }
+                }
+                addFunction("build") {
+                    returns(type)
+                    parameters.filter { it.isMandatory }.groupBy { it.group }.forEach { (_, parameters) ->
+                        addStatement(
+                            "check(%L)·{ \"%L·must·be·assigned.\" }",
+                            parameters.map { "%L != null".codeFmt(it.name) }.joinToCode(" || "),
+                            parameters.joinToString(separator = ",·", prefix = if (parameters.size > 1) "One·of·" else "") { it.name },
+                        )
+                    }
+                    if (parameters.any { it.hasDefault }) {
+                        addStatement(
+                            "return %T::class.java.getConstructor(%L, %L, %L).newInstance(%L, %L, null)",
+                            type,
+                            parameters
+                                .map {
+                                    "%T::class.%L".codeFmt(
+                                        it.typeName.toRawType().nonnull,
+                                        if (it.typeName.isNullable) "javaObjectType" else "java",
+                                    )
+                                }.joinToCode(),
+                            bitFieldIndices.map { "%T::class.java".codeFmt(INT) }.joinToCode(),
+                            if (kotlinVersion.isAtLeast(1, 5)) {
+                                "%T::class.java".codeFmt(DefaultConstructorMarker::class.asClassName())
+                            } else {
+                                "Class.forName(%S)".codeFmt(DefaultConstructorMarker::class.java.name)
+                            },
+                            parameters
+                                .map {
+                                    when {
+                                        it.typeName.isNullable -> "%L"
+                                        it.typeName == BOOLEAN -> "%L ?: false"
+                                        it.typeName == BYTE -> "%L ?: 0"
+                                        it.typeName == SHORT -> "%L ?: 0"
+                                        it.typeName == INT -> "%L ?: 0"
+                                        it.typeName == LONG -> "%L ?: 0"
+                                        it.typeName == CHAR -> "%L ?: '\\u0000'"
+                                        it.typeName == FLOAT -> "%L ?: 0.0f"
+                                        it.typeName == DOUBLE -> "%L ?: 0.0"
+                                        else -> "%L"
+                                    }.codeFmt(it.name)
+                                }.joinToCode(),
+                            bitFieldIndices.map { "%L".codeFmt(DEFAULTS_BITFLAGS_FIELD_NAME + it) }.joinToCode(),
+                        )
+                    } else {
+                        addStatement(
+                            "return %T(%L)",
+                            type,
+                            parameters.map { (if (it.typeName.isNullable) "%L" else "%L!!").codeFmt(it.name) }.joinToCode(),
+                        )
+                    }
+                }
+                addAnnotation(DslInspect::class)
+                if (markerType != null && markerType != Annotation::class.asClassName()) {
+                    addAnnotation(markerType)
+                }
+            }
+            addFunction(type.simpleName.replaceFirstChar { it.lowercase(Locale.getDefault()) }) {
+                addModifiers(KModifier.INLINE)
+                addParameter("initializer", builderType.asLambdaReceiver())
+                addStatement("return %T().apply(initializer).build()", builderType)
+                returns(type)
+            }
+        }.writeTo(clazz, codeGenerator)
+        return true
+    }
 
     private fun TypeSpecBuilder.addParameterNestedSetter(parameter: Parameter) =
         addFunction(parameter.name) {
