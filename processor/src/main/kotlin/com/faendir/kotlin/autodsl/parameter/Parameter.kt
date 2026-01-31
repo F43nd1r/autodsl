@@ -10,13 +10,22 @@ class Parameter(
     requiredGroup: String?,
     val index: Int,
     val hasNestedDsl: Boolean,
-    val collectionType: CollectionType?
+    val collectionType: CollectionType?,
 ) {
-    val isMandatory = requiredGroup != null || !hasDefault && !typeName.isNullable
+    val isMandatory = (requiredGroup != null) || (!hasDefault && !typeName.isNullable)
     val group = requiredGroup ?: (name + index)
 }
 
-sealed class CollectionType(val createFunction: String, val convertFunction: String, val singular: String) {
-    class ListType(singular: String) : CollectionType("listOf", "toList", singular)
-    class SetType(singular: String) : CollectionType("setOf", "toSet", singular)
+sealed class CollectionType(
+    val createFunction: String,
+    val convertFunction: String,
+    val singular: String,
+) {
+    class ListType(
+        singular: String,
+    ) : CollectionType("listOf", "toList", singular)
+
+    class SetType(
+        singular: String,
+    ) : CollectionType("setOf", "toSet", singular)
 }

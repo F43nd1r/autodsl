@@ -3,15 +3,15 @@ package com.faendir.kotlin.autodsl
 import org.junit.jupiter.api.TestFactory
 
 class BasicTest {
-
     @TestFactory
-    fun `basic values`() = compile(
-        """
+    fun `basic values`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(val a: String)
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -19,16 +19,17 @@ class BasicTest {
                         a = "Hi"
                     }.a).isEqualTo("Hi")
                 }
-            """
-    )
+            """,
+        )
 
     @TestFactory
-    fun `primitive values`() = compile(
-        """
+    fun `primitive values`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(
-                    val a: Boolean, 
+                    val a: Boolean,
                     val b: Byte,
                     val c: Short,
                     val d: Int,
@@ -37,7 +38,7 @@ class BasicTest {
                     val g: Float,
                     val h: Double)
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -61,18 +62,19 @@ class BasicTest {
                         get(Entity::h).isEqualTo(6.0)
                     }
                 }
-            """
-    )
+            """,
+        )
 
     @TestFactory
-    fun `package name`() = compile(
-        """
+    fun `package name`() =
+        compile(
+            """
                 package com.faendir.test
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(val a: String)
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 import com.faendir.test.entity
@@ -81,12 +83,13 @@ class BasicTest {
                         a = "Hi"
                     }.a).isEqualTo("Hi")
                 }
-            """
-    )
+            """,
+        )
 
     @TestFactory
-    fun `no primary constructor`() = compile(
-        """
+    fun `no primary constructor`() =
+        compile(
+            """
                 package com.faendir.test
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
@@ -97,7 +100,7 @@ class BasicTest {
                     }
                 }
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 import com.faendir.test.entity
@@ -106,6 +109,6 @@ class BasicTest {
                         a = "Hi"
                     }.a).isEqualTo("Hi")
                 }
-            """
-    )
+            """,
+        )
 }

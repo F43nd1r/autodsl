@@ -11,6 +11,7 @@ junit = "6.0.2"
 strikt = "0.35.1"
 intellijPlugin = "2.11.0"
 kotlinx-serialization = "1.10.0"
+kotlinter = "5.4.0"
 
 [plugins]
 intellijPlugin = { id = "org.jetbrains.intellij.platform", version.ref = "intellijPlugin" }
@@ -30,3 +31,4 @@ junit = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "juni
 kotlin-compileTesting = { module = "dev.zacsweers.kctfork:ksp", version.ref = "compileTesting" }
 strikt = { module = "io.strikt:strikt-core", version.ref = "strikt" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinter-gradle = { module = "org.jmailen.gradle:kotlinter-gradle", version.ref = "kotlinter" }

@@ -12,6 +12,7 @@ dependencies {
     implementation(libs.nexusPublish)
     implementation(libs.ksp.gradle)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinter.gradle)
 }
 
 kotlin {

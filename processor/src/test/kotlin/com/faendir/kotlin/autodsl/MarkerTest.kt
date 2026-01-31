@@ -3,10 +3,10 @@ package com.faendir.kotlin.autodsl
 import org.junit.jupiter.api.TestFactory
 
 class MarkerTest {
-
     @TestFactory
-    fun `marker in same module`() = compile(
-        """
+    fun `marker in same module`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
 
                 annotation class MyDslMarker
@@ -14,7 +14,7 @@ class MarkerTest {
                 @AutoDsl(MyDslMarker::class)
                 class Entity(val a: String)
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 import strikt.assertions.isNotNull
@@ -24,19 +24,20 @@ class MarkerTest {
                         a = "Hi"
                     }.a).isEqualTo("Hi")
                 }
-            """
-    )
+            """,
+        )
 
     @TestFactory
-    fun `marker from other module`() = compile(
-        """
+    fun `marker from other module`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 import org.junit.jupiter.api.Disabled
 
                 @AutoDsl(Disabled::class)
                 class Entity(val a: String)
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 import strikt.assertions.isNotNull
@@ -48,6 +49,6 @@ class MarkerTest {
                         a = "Hi"
                     }.a).isEqualTo("Hi")
                 }
-            """
-    )
+            """,
+        )
 }

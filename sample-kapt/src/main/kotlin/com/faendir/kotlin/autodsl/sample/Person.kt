@@ -12,18 +12,17 @@ annotation class MetaAutoDsl
 
 @AutoDsl(dslMarker = MyDsl::class)
 class Person(
-        val name: String = "Max",
-        val age: Int,
-        val address: Address?,
-        val friends: List<Person> = emptyList()
-    )
-
+    val name: String = "Max",
+    val age: Int,
+    val address: Address?,
+    val friends: List<Person> = emptyList(),
+)
 
 @MetaAutoDsl
 data class Address(
     val street: String,
     val zipCode: Int,
-    val location: Location?
+    val location: Location?,
 )
 
 @AutoDsl(dslMarker = MyDsl::class)

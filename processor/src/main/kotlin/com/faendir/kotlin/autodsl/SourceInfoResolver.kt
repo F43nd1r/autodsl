@@ -7,7 +7,6 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 
 interface SourceInfoResolver<ANNOTATED, TYPE : ANNOTATED, CONSTRUCTOR : ANNOTATED, PARAMETER : ANNOTATED> {
-
     fun getClassesWithAnnotation(annotation: KClass<out Annotation>): List<TYPE>
 
     fun getClassesWithAnnotation(annotation: TYPE): List<TYPE>
@@ -16,9 +15,15 @@ interface SourceInfoResolver<ANNOTATED, TYPE : ANNOTATED, CONSTRUCTOR : ANNOTATE
 
     fun ANNOTATED.hasAnnotation(annotation: KClass<out Annotation>): Boolean
 
-    fun <T : Annotation> ANNOTATED.getAnnotationTypeProperty(annotation: KClass<T>, property: KProperty1<T, KClass<*>>): ClassName?
+    fun <T : Annotation> ANNOTATED.getAnnotationTypeProperty(
+        annotation: KClass<T>,
+        property: KProperty1<T, KClass<*>>,
+    ): ClassName?
 
-    fun <T : Annotation, V> ANNOTATED.getAnnotationProperty(annotation: KClass<T>, property: KProperty1<T, V>): V?
+    fun <T : Annotation, V> ANNOTATED.getAnnotationProperty(
+        annotation: KClass<T>,
+        property: KProperty1<T, V>,
+    ): V?
 
     fun TYPE.isAbstract(): Boolean
 

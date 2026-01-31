@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm")
+    id("org.jmailen.kotlinter")
 }
 
 kotlin {
@@ -9,4 +10,7 @@ kotlin {
             freeCompilerArgs.addAll(listOf("-Xcontext-parameters"))
         }
     }
+}
+
+kotlinter {
 }

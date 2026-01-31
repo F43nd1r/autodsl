@@ -18,4 +18,4 @@ jobs:
       - name: Run tests
         uses: burrunan/gradle-cache-action@v3
         with:
-          arguments: test --no-daemon
+          arguments: check --no-daemon

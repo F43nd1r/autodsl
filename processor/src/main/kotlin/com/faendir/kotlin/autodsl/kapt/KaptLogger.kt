@@ -6,6 +6,11 @@ import javax.lang.model.element.Element
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
-class KaptLogger(private val delegate: Messager): Logger<Type> {
-    override fun error(message: String, source: Type?) = delegate.printMessage(Diagnostic.Kind.ERROR, message, source?.element)
+class KaptLogger(
+    private val delegate: Messager,
+) : Logger<Type> {
+    override fun error(
+        message: String,
+        source: Type?,
+    ) = delegate.printMessage(Diagnostic.Kind.ERROR, message, source?.element)
 }

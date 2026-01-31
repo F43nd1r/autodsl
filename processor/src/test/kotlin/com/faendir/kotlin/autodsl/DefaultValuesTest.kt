@@ -3,26 +3,27 @@ package com.faendir.kotlin.autodsl
 import org.junit.jupiter.api.TestFactory
 
 class DefaultValuesTest {
-
     @TestFactory
-    fun `default value`() = compile(
-        """
+    fun `default value`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(val a: String = "Hi")
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
                     expectThat(entity {}.a).isEqualTo("Hi")
                 }
-            """
-    )
+            """,
+        )
 
     @TestFactory
-    fun `primitive default value`() = compile(
-        """
+    fun `primitive default value`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(
@@ -35,7 +36,7 @@ class DefaultValuesTest {
                     val g: Float = 5.0f,
                     val h: Double = 6.0)
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -50,12 +51,13 @@ class DefaultValuesTest {
                         get(Entity::h).isEqualTo(6.0)
                     }
                 }
-            """
-    )
+            """,
+        )
 
     @TestFactory
-    fun `nullable primitive values with default value present`() = compile(
-        """
+    fun `nullable primitive values with default value present`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(
@@ -69,7 +71,7 @@ class DefaultValuesTest {
                     val h: Double?,
                     val i: String = "i")
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -94,17 +96,18 @@ class DefaultValuesTest {
                         get(Entity::i).isEqualTo("i")
                     }
                 }
-            """
-    )
+            """,
+        )
 
     @TestFactory
-    fun `default value after required`() = compile(
-        """
+    fun `default value after required`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(val a: String, val b: String = "Hi")
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -112,17 +115,18 @@ class DefaultValuesTest {
                         a = "a"
                     }.b).isEqualTo("Hi")
                 }
-            """
-    )
+            """,
+        )
 
     @TestFactory
-    fun `default value before required`() = compile(
-        """
+    fun `default value before required`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(val a: String = "Hi", val b: String)
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -130,12 +134,13 @@ class DefaultValuesTest {
                         b = "b"
                     }.a).isEqualTo("Hi")
                 }
-            """
-    )
+            """,
+        )
 
     @TestFactory
-    fun `default values with over 32 parameters`() = compile(
-    """
+    fun `default values with over 32 parameters`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(
@@ -174,7 +179,7 @@ class DefaultValuesTest {
                     val a33: String = "a33",
                 )
             """,
-    """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -213,6 +218,6 @@ class DefaultValuesTest {
                     expectThat(entity.a32).isEqualTo("a32")
                     expectThat(entity.a33).isEqualTo("a33")
                 }
-            """
-    )
+            """,
+        )
 }

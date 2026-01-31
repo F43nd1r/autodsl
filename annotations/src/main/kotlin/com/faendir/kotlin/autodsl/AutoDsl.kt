@@ -4,4 +4,6 @@ import kotlin.reflect.KClass
 
 @Retention(AnnotationRetention.SOURCE)
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPEALIAS)
-annotation class AutoDsl(val dslMarker: KClass<out Annotation> = Annotation::class )
+annotation class AutoDsl(
+    val dslMarker: KClass<out Annotation> = Annotation::class,
+)

@@ -12,17 +12,19 @@ tasks.withType<DokkaTask> {
     }
 }
 
-val javadocJar = tasks.register<Jar>("javadocJar") {
-    group = "documentation"
-    from(tasks["dokkaGenerate"])
-    archiveClassifier.set("javadoc")
-}
+val javadocJar =
+    tasks.register<Jar>("javadocJar") {
+        group = "documentation"
+        from(tasks["dokkaGenerate"])
+        archiveClassifier.set("javadoc")
+    }
 
-val sourcesJar = tasks.register<Jar>("sourcesJar") {
-    group = "documentation"
-    from(project.extensions.getByType<SourceSetContainer>()["main"].allSource)
-    archiveClassifier.set("sources")
-}
+val sourcesJar =
+    tasks.register<Jar>("sourcesJar") {
+        group = "documentation"
+        from(project.extensions.getByType<SourceSetContainer>()["main"].allSource)
+        archiveClassifier.set("sources")
+    }
 
 publishing {
     publications {

@@ -8,6 +8,8 @@ import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 import org.jetbrains.kotlin.analysis.api.KaContextParameterApi
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
@@ -32,14 +34,14 @@ import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.psi.KtVisitorVoid
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.contract
 
 @ExperimentalContracts
 class DslInspection : LocalInspectionTool() {
-    override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor {
-        return object : KtVisitorVoid() {
-
+    override fun buildVisitor(
+        holder: ProblemsHolder,
+        isOnTheFly: Boolean,
+    ): PsiElementVisitor =
+        object : KtVisitorVoid() {
             override fun visitLambdaExpression(lambda: KtLambdaExpression) {
                 analyze(lambda) {
                     val receiver = (lambda.expressionType as? KaFunctionType)?.receiverType
@@ -49,31 +51,42 @@ class DslInspection : LocalInspectionTool() {
                 }
             }
         }
-    }
 
     context(session: KaSession)
-    private fun visitDslLambda(holder: ProblemsHolder, lambda: KtLambdaExpression, receiver: KaType) {
+    private fun visitDslLambda(
+        holder: ProblemsHolder,
+        lambda: KtLambdaExpression,
+        receiver: KaType,
+    ) {
         val mandatory = receiver.getMandatoryProperties()
         val body = lambda.bodyExpression ?: return
-        val present = body.statements.filterIsInstance<KtBinaryExpression>()
-            .filter { it.operationToken == KtTokens.EQ }
-            .mapNotNull { extractPropertyName(it.left) }
+        val present =
+            body.statements
+                .filterIsInstance<KtBinaryExpression>()
+                .filter { it.operationToken == KtTokens.EQ }
+                .mapNotNull { extractPropertyName(it.left) }
         mandatory.values.forEach { group ->
             if (present.none { group.contains(it) }) {
                 holder.registerProblem(
                     lambda.functionLiteral.rBrace!!,
-                    if (group.size == 1) "Missing property: ${group.first()}" else
-                        "Missing property: One of ${group.joinToString()}",
-                    *group.map { InsertMissingFix(it) }.toTypedArray()
+                    if (group.size == 1) {
+                        "Missing property: ${group.first()}"
+                    } else {
+                        "Missing property: One of ${group.joinToString()}"
+                    },
+                    *group.map { InsertMissingFix(it) }.toTypedArray(),
                 )
             }
         }
     }
 
-    private fun extractPropertyName(expression: KtExpression?): String? {
-        return when (expression) {
+    private fun extractPropertyName(expression: KtExpression?): String? =
+        when (expression) {
             // Handle direct assignment: propertyName = value
-            is KtNameReferenceExpression -> expression.getReferencedName()
+            is KtNameReferenceExpression -> {
+                expression.getReferencedName()
+            }
+
             // Handle this assignment: this.propertyName = value
             is KtDotQualifiedExpression -> {
                 val receiver = expression.receiverExpression as? KtThisExpression
@@ -84,14 +97,21 @@ class DslInspection : LocalInspectionTool() {
                     null
                 }
             }
-            else -> null
-        }
-    }
 
-    class InsertMissingFix(private val missing: String) : LocalQuickFix {
+            else -> {
+                null
+            }
+        }
+
+    class InsertMissingFix(
+        private val missing: String,
+    ) : LocalQuickFix {
         override fun getFamilyName(): String = "Insert missing assignment"
 
-        override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
+        override fun applyFix(
+            project: Project,
+            descriptor: ProblemDescriptor,
+        ) {
             val body = (descriptor.psiElement.parent as? KtFunctionLiteral)?.bodyBlockExpression
             if (body != null) {
                 val factory = KtPsiFactory(project)
@@ -110,14 +130,26 @@ class DslInspection : LocalInspectionTool() {
     @OptIn(KaContextParameterApi::class)
     context(_: KaSession)
     private fun KaType.getMandatoryProperties(): Map<String, List<String>> {
-        val descriptors = this.expandedSymbol?.memberScope?.callables.orEmpty().toList()
-        return (descriptors.filterIsInstance<KaPropertySymbol>().map { it.setter?.annotations to it.name.identifier }
-                + descriptors.filterIsInstance<KaNamedFunctionSymbol>().map { it.annotations to it.name.identifier })
-            .mapNotNull { (annotations, name) -> annotations?.get(DSL_MANDATORY)?.firstOrNull()?.let { (it.findGroup() ?: name) to name } }
+        val descriptors =
+            this.expandedSymbol
+                ?.memberScope
+                ?.callables
+                .orEmpty()
+                .toList()
+        return (
+            descriptors.filterIsInstance<KaPropertySymbol>().map { it.setter?.annotations to it.name.identifier } +
+                descriptors.filterIsInstance<KaNamedFunctionSymbol>().map { it.annotations to it.name.identifier }
+        ).mapNotNull { (annotations, name) -> annotations?.get(DSL_MANDATORY)?.firstOrNull()?.let { (it.findGroup() ?: name) to name } }
             .groupBy({ it.first }, { it.second })
     }
 
-    private fun KaAnnotation.findGroup(): String? = arguments.find { it.name.identifier == "group" }?.expression?.renderAsSourceCode()?.takeIf { it.isNotEmpty() }
+    private fun KaAnnotation.findGroup(): String? =
+        arguments
+            .find {
+                it.name.identifier == "group"
+            }?.expression
+            ?.renderAsSourceCode()
+            ?.takeIf { it.isNotEmpty() }
 }
 
 private val DSL_INSPECT = ClassId.topLevel(FqName(DslInspect::class.java.name))

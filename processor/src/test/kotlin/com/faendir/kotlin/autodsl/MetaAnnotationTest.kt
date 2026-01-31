@@ -3,10 +3,10 @@ package com.faendir.kotlin.autodsl
 import org.junit.jupiter.api.TestFactory
 
 class MetaAnnotationTest {
-
     @TestFactory
-    fun `meta annotation`() = compile(
-        """
+    fun `meta annotation`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 annotation class MyAutoDsl
@@ -14,7 +14,7 @@ class MetaAnnotationTest {
                 @MyAutoDsl
                 class Entity(val a: String)
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 fun test() {
@@ -22,12 +22,13 @@ class MetaAnnotationTest {
                         a = "Hi"
                     }.a).isEqualTo("Hi")
                 }
-            """
-    )
+            """,
+        )
 
     @TestFactory
-    fun `meta annotation with marker`() = compile(
-        """
+    fun `meta annotation with marker`() =
+        compile(
+            """
                 import com.faendir.kotlin.autodsl.AutoDsl
 
                 annotation class MyDslMarker
@@ -38,7 +39,7 @@ class MetaAnnotationTest {
                 @MyAutoDsl
                 class Entity(val a: String)
             """,
-        """
+            """
                 import strikt.api.expectThat
                 import strikt.assertions.isEqualTo
                 import strikt.assertions.isNotNull
@@ -48,6 +49,6 @@ class MetaAnnotationTest {
                         a = "Hi"
                     }.a).isEqualTo("Hi")
                 }
-            """
-    )
+            """,
+        )
 }
