@@ -51,4 +51,33 @@ class MetaAnnotationTest {
                 }
             """,
         )
+
+    @TestFactory
+    fun `meta annotated parameter type`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+
+                annotation class MyDslMarker
+
+                @AutoDsl(MyDslMarker::class)
+                annotation class MyAutoDsl
+
+                @MyAutoDsl
+                class Entity(val a: Entity2)
+                @MyAutoDsl
+                class Entity2(val b: String)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(entity {
+                        a {
+                            b = "Hi"
+                        }
+                    }.a.b).isEqualTo("Hi")
+                }
+            """,
+        )
 }

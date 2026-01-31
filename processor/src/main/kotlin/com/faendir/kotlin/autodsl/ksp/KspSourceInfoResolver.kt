@@ -1,10 +1,10 @@
 package com.faendir.kotlin.autodsl.ksp
 
+import com.faendir.kotlin.autodsl.AnnotationFinder
 import com.faendir.kotlin.autodsl.SourceInfoResolver
 import com.google.devtools.ksp.KSTypeNotPresentException
 import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.getAnnotationsByType
-import com.google.devtools.ksp.isAnnotationPresent
 import com.google.devtools.ksp.isInternal
 import com.google.devtools.ksp.isPublic
 import com.google.devtools.ksp.processing.Resolver
@@ -27,7 +27,8 @@ import com.google.devtools.ksp.getConstructors as superGetConstructors
 @OptIn(KspExperimental::class)
 class KspSourceInfoResolver(
     private val resolver: Resolver,
-) : SourceInfoResolver<KSAnnotated, KSClassDeclaration, KSFunctionDeclaration, KSValueParameter> {
+) : AnnotationFinder<KSAnnotated>(),
+    SourceInfoResolver<KSAnnotated, KSClassDeclaration, KSFunctionDeclaration, KSValueParameter> {
     private fun getClassesWithAnnotation(annotation: String): List<KSClassDeclaration> =
         resolver.getSymbolsWithAnnotation(annotation).filterIsInstance<KSClassDeclaration>().toList()
 
@@ -37,13 +38,13 @@ class KspSourceInfoResolver(
 
     override fun KSClassDeclaration.getClassKind(): ClassKind = classKind
 
-    override fun KSAnnotated.hasAnnotation(annotation: KClass<out Annotation>): Boolean = isAnnotationPresent(annotation)
+    override fun KSAnnotated.hasAnnotation(annotation: KClass<out Annotation>): Boolean = findAnnotation(annotation) != null
 
     override fun <T : Annotation> KSAnnotated.getAnnotationTypeProperty(
         annotation: KClass<T>,
         property: KProperty1<T, KClass<*>>,
     ): ClassName? =
-        getAnnotationsByType(annotation).firstOrNull()?.let { annotationValue ->
+        findAnnotation(annotation)?.let { annotationValue ->
             try {
                 property.get(annotationValue).asClassName()
             } catch (e: KSTypeNotPresentException) {
@@ -54,7 +55,18 @@ class KspSourceInfoResolver(
     override fun <T : Annotation, V> KSAnnotated.getAnnotationProperty(
         annotation: KClass<T>,
         property: KProperty1<T, V>,
-    ): V? = getAnnotationsByType(annotation).firstOrNull()?.let { property.get(it) }
+    ): V? = findAnnotation(annotation)?.let { property.get(it) }
+
+    override fun <T : Annotation> KSAnnotated.getDirectAnnotation(annotation: KClass<T>): T? =
+        getAnnotationsByType(annotation).firstOrNull()
+
+    override fun KSAnnotated.getDirectAnnotations(): Iterable<KSAnnotated> =
+        annotations
+            .mapNotNull {
+                it.annotationType.resolve().declaration as? KSClassDeclaration
+            }.asIterable()
+
+    override fun KSAnnotated.getQualifiedName(): String? = (this as? KSClassDeclaration)?.qualifiedName?.asString()
 
     override fun KSClassDeclaration.isAbstract(): Boolean = modifiers.contains(Modifier.ABSTRACT)
 

@@ -1,5 +1,6 @@
 package com.faendir.kotlin.autodsl.kapt
 
+import com.faendir.kotlin.autodsl.AnnotationFinder
 import com.faendir.kotlin.autodsl.SourceInfoResolver
 import com.faendir.kotlin.autodsl.nonnull
 import com.faendir.kotlin.autodsl.toRawType
@@ -20,6 +21,7 @@ import com.squareup.kotlinpoet.metadata.classinspectors.ElementsClassInspector
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment
+import javax.lang.model.element.AnnotationMirror
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
@@ -35,7 +37,8 @@ import kotlin.reflect.KProperty1
 class KaptSourceInfoResolver(
     private val processingEnv: ProcessingEnvironment,
     private val roundEnv: RoundEnvironment,
-) : SourceInfoResolver<Annotated, Type, Constructor, Parameter> {
+) : AnnotationFinder<Annotated>(),
+    SourceInfoResolver<Annotated, Type, Constructor, Parameter> {
     private fun Set<Element>.mapToTypes() = filterIsInstance<TypeElement>().map { Type(it, it.toTypeSpec()) }
 
     override fun getClassesWithAnnotation(annotation: KClass<out Annotation>): List<Type> =
@@ -63,14 +66,14 @@ class KaptSourceInfoResolver(
             }
         }
 
-    override fun Annotated.hasAnnotation(annotation: KClass<out Annotation>): Boolean = getAnnotation(annotation) != null
+    override fun Annotated.hasAnnotation(annotation: KClass<out Annotation>): Boolean = findAnnotation(annotation) != null
 
     override fun <T : Annotation> Annotated.getAnnotationTypeProperty(
         annotation: KClass<T>,
         property: KProperty1<T, KClass<*>>,
     ): ClassName? =
         try {
-            getAnnotation(annotation)?.let(property)?.asClassName()
+            findAnnotation(annotation)?.let(property)?.asClassName()
         } catch (e: MirroredTypeException) {
             (e.typeMirror.asTypeName() as? ClassName)
         }?.mapToKotlin()
@@ -78,7 +81,17 @@ class KaptSourceInfoResolver(
     override fun <T : Annotation, V> Annotated.getAnnotationProperty(
         annotation: KClass<T>,
         property: KProperty1<T, V>,
-    ): V? = getAnnotation(annotation)?.let(property)
+    ): V? = findAnnotation(annotation)?.let(property)
+
+    override fun <T : Annotation> Annotated.getDirectAnnotation(annotation: KClass<T>): T? = getAnnotation(annotation)
+
+    override fun Annotated.getDirectAnnotations(): Iterable<Annotated> =
+        getAnnotationMirrors()
+            .mapNotNull {
+                it.annotationType.toType()?.element
+            }.map { Type(it, it.toTypeSpec()) }
+
+    override fun Annotated.getQualifiedName(): String? = (this as? Type)?.element?.qualifiedName?.toString()
 
     override fun Type.isAbstract(): Boolean = typeSpec.modifiers.contains(KModifier.ABSTRACT)
 
@@ -101,15 +114,22 @@ class KaptSourceInfoResolver(
                         (element.parameters zip constructorSpec.parameters).all { (e, k) ->
                             val eType = e.asType().asTypeName().mapToKotlin()
                             val kType = k.type.nonnull
-                            if (eType is ParameterizedTypeName && kType is ParameterizedTypeName) {
-                                // Invariant kotlin parameters are variant in java, just check erased type
-                                eType.rawType == kType.rawType
-                            } else if (eType is ParameterizedTypeName && kType is LambdaTypeName) {
-                                // Lambdas are kotlin.FunctionX types in java
-                                eType.typeArguments.map { it.toRawType() } ==
-                                    listOfNotNull(kType.receiver) + kType.parameters.map { it.type.withoutAnnotations() } + kType.returnType
-                            } else {
-                                eType == kType
+                            when (eType) {
+                                is ParameterizedTypeName if kType is ParameterizedTypeName -> {
+                                    // Invariant kotlin parameters are variant in java, just check erased type
+                                    eType.rawType == kType.rawType
+                                }
+
+                                is ParameterizedTypeName if kType is LambdaTypeName -> {
+                                    // Lambdas are kotlin.FunctionX types in java
+                                    eType.typeArguments.map { it.toRawType() } ==
+                                        listOfNotNull(kType.receiver) + kType.parameters.map { it.type.withoutAnnotations() } +
+                                        kType.returnType
+                                }
+
+                                else -> {
+                                    eType == kType
+                                }
                             }
                         }
                 }
@@ -138,7 +158,7 @@ class KaptSourceInfoResolver(
         (processingEnv.typeUtils.asElement(this) as? TypeElement)?.let { element ->
             try {
                 Type(element, element.toTypeSpec())
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         }
@@ -162,6 +182,8 @@ class KaptSourceInfoResolver(
 
 interface Annotated {
     fun <T : Annotation> getAnnotation(annotation: KClass<T>): T?
+
+    fun getAnnotationMirrors(): List<AnnotationMirror>
 }
 
 class Type(
@@ -169,6 +191,8 @@ class Type(
     internal val typeSpec: TypeSpec,
 ) : Annotated {
     override fun <T : Annotation> getAnnotation(annotation: KClass<T>): T? = element.getAnnotation(annotation.java)
+
+    override fun getAnnotationMirrors(): List<AnnotationMirror> = element.annotationMirrors
 
     override fun toString(): String = element.toString()
 }
@@ -179,6 +203,8 @@ class Constructor(
     internal val isPrimary: Boolean,
 ) : Annotated {
     override fun <T : Annotation> getAnnotation(annotation: KClass<T>): T? = element.getAnnotation(annotation.java)
+
+    override fun getAnnotationMirrors(): List<AnnotationMirror> = element.annotationMirrors
 }
 
 class Parameter(
@@ -186,4 +212,6 @@ class Parameter(
     internal val parameterSpec: ParameterSpec,
 ) : Annotated {
     override fun <T : Annotation> getAnnotation(annotation: KClass<T>): T? = element.getAnnotation(annotation.java)
+
+    override fun getAnnotationMirrors(): List<AnnotationMirror> = element.annotationMirrors
 }
