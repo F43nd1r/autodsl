@@ -144,6 +144,7 @@ class DslGenerator<A, T : A, C : A>(
                 }
             }
             addFunction(type.simpleName.replaceFirstChar { it.lowercase(Locale.getDefault()) }) {
+                addModifiers(KModifier.INLINE)
                 addParameter("initializer", builderType.asLambdaReceiver())
                 addStatement("return %T().apply(initializer).build()", builderType)
                 returns(type)
@@ -153,6 +154,7 @@ class DslGenerator<A, T : A, C : A>(
     }
 
     private fun TypeSpecBuilder.addParameterNestedSetter(parameter: Parameter) = addFunction(parameter.name) {
+        addModifiers(KModifier.INLINE)
         val nestedBuilderType = parameter.typeName.withBuilderSuffix()
         addParameter("initializer", nestedBuilderType.asLambdaReceiver())
         addStatement("val result = %T().apply(initializer).build()", nestedBuilderType)
@@ -162,6 +164,7 @@ class DslGenerator<A, T : A, C : A>(
     }
 
     private fun TypeSpecBuilder.addParameterNestedAdder(parameter: Parameter) = addFunction(parameter.collectionType!!.singular) {
+        addModifiers(KModifier.INLINE)
         val elementType = (parameter.typeName as ParameterizedTypeName).typeArguments.first()
         val nestedBuilderType = elementType.withBuilderSuffix()
         addParameter("initializer", nestedBuilderType.asLambdaReceiver())
