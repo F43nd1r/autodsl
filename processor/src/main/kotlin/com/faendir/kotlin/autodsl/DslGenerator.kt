@@ -117,7 +117,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
         val builderType = type.withBuilderSuffix()
         val bitFieldIndices = 0..parameters.size / 32
         val typePrefix = type.simpleNames.joinToString("")
-            buildFile(type.packageName, "${typePrefix}Dsl") {
+        buildFile(type.packageName, "${typePrefix}Dsl") {
             addClass(builderType.simpleName) {
                 if (parameters.any { it.hasDefault }) {
                     for (i in bitFieldIndices) {
