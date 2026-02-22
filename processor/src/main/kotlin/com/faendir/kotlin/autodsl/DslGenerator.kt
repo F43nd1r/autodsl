@@ -116,7 +116,8 @@ class DslGenerator<A, T : A, C : A, P : A>(
         val type = clazz.asClassName()
         val builderType = type.withBuilderSuffix()
         val bitFieldIndices = 0..parameters.size / 32
-        buildFile(type.packageName, "${type.simpleName}Dsl") {
+        val typePrefix = type.simpleNames.joinToString("")
+            buildFile(type.packageName, "${typePrefix}Dsl") {
             addClass(builderType.simpleName) {
                 if (parameters.any { it.hasDefault }) {
                     for (i in bitFieldIndices) {
@@ -194,7 +195,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
                     addAnnotation(markerType)
                 }
             }
-            addFunction(type.simpleName.replaceFirstChar { it.lowercase(Locale.getDefault()) }) {
+            addFunction(typePrefix.replaceFirstChar { it.lowercase(Locale.getDefault()) }) {
                 addModifiers(KModifier.INLINE)
                 addParameter("initializer", builderType.asLambdaReceiver())
                 addStatement("return %T().apply(initializer).build()", builderType)

@@ -63,7 +63,7 @@ fun TypeName.withoutAnnotations(): TypeName =
         }
     }
 
-fun ClassName.withBuilderSuffix() = ClassName(packageName, "${simpleName}Builder")
+fun ClassName.withBuilderSuffix() = ClassName(packageName, "${simpleNames.joinToString("")}Builder")
 
 fun TypeName.withBuilderSuffix() = toRawType().withBuilderSuffix()
 
