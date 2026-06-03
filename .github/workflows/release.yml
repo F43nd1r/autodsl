@@ -12,20 +12,20 @@ jobs:
 
     steps:
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.2.0
         with:
           distribution: 'temurin'
           java-version: '17'
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.3
         with:
           ref: ${{ github.ref }}
       - name: Run tests
-        uses: burrunan/gradle-cache-action@v3
+        uses: burrunan/gradle-cache-action@v3.0.2
         with:
             arguments: check --no-daemon
       - name: Publish
-        uses: burrunan/gradle-cache-action@v3
+        uses: burrunan/gradle-cache-action@v3.0.2
         with:
           arguments: publish --no-daemon
         env:
