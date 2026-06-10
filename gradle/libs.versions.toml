@@ -1,17 +1,17 @@
 [versions]
-kotlin = "2.3.10"
+kotlin = "2.4.0"
 dokka = "2.2.0"
 jgitver = "0.10.0-rc03"
 nexusPublish = "2.0.0"
-ksp = "2.3.6"
+ksp = "2.3.9"
 kotlinPoet = "2.3.0"
 kotlinBard = "0.6.0"
-compileTesting = "0.12.1"
+compileTesting = "0.13.0"
 junit = "6.1.0"
 strikt = "0.35.1"
 intellijPlugin = "2.16.0"
 intellijIdea = "2025.3"
-kotlinx-serialization = "1.10.0"
+kotlinx-serialization = "1.11.0"
 kotlinter = "5.5.0"
 
 [plugins]
