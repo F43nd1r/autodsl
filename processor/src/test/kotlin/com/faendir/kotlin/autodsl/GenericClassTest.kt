@@ -3,7 +3,6 @@ package com.faendir.kotlin.autodsl
 import org.junit.jupiter.api.TestFactory
 
 class GenericClassTest {
-
     @TestFactory
     fun `basic type parameter`() =
         compile(

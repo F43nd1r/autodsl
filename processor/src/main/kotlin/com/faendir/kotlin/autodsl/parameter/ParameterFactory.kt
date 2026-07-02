@@ -21,7 +21,10 @@ class ParameterFactory<A, T : A, C : A, P : A>(
     private val iterable = Iterable::class.asClassName()
 
     @JvmName("getParametersFromConstructor")
-    fun getParameters(constructor: C, enclosingType: T): List<Parameter> =
+    fun getParameters(
+        constructor: C,
+        enclosingType: T,
+    ): List<Parameter> =
         constructor.getParameters().withIndex().map { (index, parameter) ->
             val type = parameter.getTypeName(enclosingType)
             val rawType = type.toRawType()

@@ -108,39 +108,39 @@ class KaptSourceInfoResolver(
                 typeSpec.funSpecs
                     .filter { it.isConstructor }
                     .map { it to false }
-            ).map { (constructorSpec, isPrimary) ->
-                val element =
-                    constructorElements.first { element ->
-                        element.parameters.size == constructorSpec.parameters.size &&
-                            (element.parameters zip constructorSpec.parameters).all { (e, k) ->
-                                val eType = e.asType().asTypeName().mapToKotlin()
-                                val kType = k.type.nonnull
-                                when (eType) {
-                                    is ParameterizedTypeName if kType is ParameterizedTypeName -> {
-                                        // Invariant kotlin parameters are variant in java, just check erased type
-                                        eType.rawType == kType.rawType
-                                    }
+        ).map { (constructorSpec, isPrimary) ->
+            val element =
+                constructorElements.first { element ->
+                    element.parameters.size == constructorSpec.parameters.size &&
+                        (element.parameters zip constructorSpec.parameters).all { (e, k) ->
+                            val eType = e.asType().asTypeName().mapToKotlin()
+                            val kType = k.type.nonnull
+                            when (eType) {
+                                is ParameterizedTypeName if kType is ParameterizedTypeName -> {
+                                    // Invariant kotlin parameters are variant in java, just check erased type
+                                    eType.rawType == kType.rawType
+                                }
 
-                                    is TypeVariableName if kType is TypeVariableName -> {
-                                        // Bounds may be variant in java, just check name
-                                        eType.name == kType.name
-                                    }
+                                is TypeVariableName if kType is TypeVariableName -> {
+                                    // Bounds may be variant in java, just check name
+                                    eType.name == kType.name
+                                }
 
-                                    is ParameterizedTypeName if kType is LambdaTypeName -> {
-                                        // Lambdas are kotlin.FunctionX types in java
-                                        eType.typeArguments.map { it.toRawType() } ==
-                                            listOfNotNull(kType.receiver) + kType.parameters.map { it.type.withoutAnnotations() } +
-                                            kType.returnType
-                                    }
+                                is ParameterizedTypeName if kType is LambdaTypeName -> {
+                                    // Lambdas are kotlin.FunctionX types in java
+                                    eType.typeArguments.map { it.toRawType() } ==
+                                        listOfNotNull(kType.receiver) + kType.parameters.map { it.type.withoutAnnotations() } +
+                                        kType.returnType
+                                }
 
-                                    else -> {
-                                        eType == kType
-                                    }
+                                else -> {
+                                    eType == kType
                                 }
                             }
-                    }
-                Constructor(element, constructorSpec, isPrimary)
-            }
+                        }
+                }
+            Constructor(element, constructorSpec, isPrimary)
+        }
     }
 
     override fun Constructor.isAccessible(): Boolean =
