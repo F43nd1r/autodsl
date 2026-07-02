@@ -21,9 +21,9 @@ class ParameterFactory<A, T : A, C : A, P : A>(
     private val iterable = Iterable::class.asClassName()
 
     @JvmName("getParametersFromConstructor")
-    fun getParameters(constructor: C): List<Parameter> =
+    fun getParameters(constructor: C, enclosingType: T): List<Parameter> =
         constructor.getParameters().withIndex().map { (index, parameter) ->
-            val type = parameter.getTypeName()
+            val type = parameter.getTypeName(enclosingType)
             val rawType = type.toRawType()
             val (hasNestedDsl, collectionType) =
                 when (rawType) {
@@ -41,14 +41,14 @@ class ParameterFactory<A, T : A, C : A, P : A>(
                     }
                 }
             Parameter(
-                type,
-                parameter.getName(),
-                parameter.getDoc(),
-                parameter.hasDefault(),
-                parameter.getAnnotationProperty(AutoDslRequired::class, AutoDslRequired::group),
-                index,
-                hasNestedDsl,
-                collectionType,
+                typeName = type,
+                name = parameter.getName(),
+                doc = parameter.getDoc(),
+                hasDefault = parameter.hasDefault(),
+                requiredGroup = parameter.getAnnotationProperty(AutoDslRequired::class, AutoDslRequired::group),
+                index = index,
+                hasNestedDsl = hasNestedDsl,
+                collectionType = collectionType,
             )
         }
 

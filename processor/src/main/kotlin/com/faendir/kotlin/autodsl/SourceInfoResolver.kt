@@ -3,6 +3,7 @@ package com.faendir.kotlin.autodsl
 import com.google.devtools.ksp.symbol.ClassKind
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 
@@ -39,11 +40,13 @@ interface SourceInfoResolver<ANNOTATED, TYPE : ANNOTATED, CONSTRUCTOR : ANNOTATE
 
     fun TYPE.asClassName(): ClassName
 
+    fun TYPE.getTypeParameters(): List<TypeVariableName>
+
     fun PARAMETER.getTypeDeclaration(): TYPE?
 
     fun PARAMETER.getTypeArguments(): List<TYPE>
 
-    fun PARAMETER.getTypeName(): TypeName
+    fun PARAMETER.getTypeName(enclosingType: TYPE): TypeName
 
     fun PARAMETER.getName(): String
 

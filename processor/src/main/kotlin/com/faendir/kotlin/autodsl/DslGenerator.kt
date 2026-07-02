@@ -14,7 +14,10 @@ import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LONG
 import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.SHORT
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
@@ -92,33 +95,39 @@ class DslGenerator<A, T : A, C : A, P : A>(
      * returns true if class generation was successful
      */
     private fun generate(
-        clazz: T,
+        entity: T,
         markerType: ClassName?,
     ): Boolean {
-        if (clazz.isAbstract()) {
-            error("must not be abstract", clazz)
+        if (entity.isAbstract()) {
+            error("must not be abstract", entity)
             return false
         }
-        val constructors = clazz.getConstructors().filter { it.isAccessible() }
+        val constructors = entity.getConstructors().filter { it.isAccessible() }
         if (constructors.isEmpty()) {
-            error("must have at least one public or internal constructor", clazz)
+            error("must have at least one public or internal constructor", entity)
             return false
         }
         val constructor =
             constructors.firstOrNull { it.hasAnnotation(AutoDslConstructor::class) }
-                ?: clazz.getPrimaryConstructor()
+                ?: entity.getPrimaryConstructor()
                 ?: constructors.first()
         if (!constructor.isValid()) {
             // defer processing
             return false
         }
-        val parameters = parameterFactory.getParameters(constructor)
-        val type = clazz.asClassName()
-        val builderType = type.withBuilderSuffix()
+        val parameters = parameterFactory.getParameters(constructor, entity)
+        val entityClass = entity.asClassName()
+        val builderClass = entityClass.withBuilderSuffix()
+        val entityTypeParameters = entity.getTypeParameters()
+        val entityType: TypeName = entityClass.parameterize(entityTypeParameters)
+        val builderType: TypeName = builderClass.parameterize(entityTypeParameters)
         val bitFieldIndices = 0..parameters.size / 32
-        val typePrefix = type.simpleNames.joinToString("")
-        buildFile(type.packageName, "${typePrefix}Dsl") {
-            addClass(builderType.simpleName) {
+        val typePrefix = entityClass.simpleNames.joinToString("")
+        buildFile(entityClass.packageName, "${typePrefix}Dsl") {
+            addClass(builderClass.simpleName) {
+                for (typeParam in entityTypeParameters) {
+                    addTypeVariable(typeParam)
+                }
                 if (parameters.any { it.hasDefault }) {
                     for (i in bitFieldIndices) {
                         addProperty(DEFAULTS_BITFLAGS_FIELD_NAME + i, INT, KModifier.PRIVATE) {
@@ -128,10 +137,10 @@ class DslGenerator<A, T : A, C : A, P : A>(
                     }
                 }
                 for (parameter in parameters) {
-                    addParameterProperty(parameter, type)
-                    addParameterBuilderStyleSetter(parameter, builderType, type)
+                    addParameterProperty(parameter, entityClass)
+                    addParameterBuilderStyleSetter(parameter, builderType, entityClass)
                     if (parameter.collectionType != null) {
-                        addParameterBuilderStyleVarargSetter(parameter, builderType, type)
+                        addParameterBuilderStyleVarargSetter(parameter, builderType, entityClass)
                         if (parameter.hasNestedDsl) {
                             addParameterNestedAdder(parameter)
                         }
@@ -140,7 +149,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
                     }
                 }
                 addFunction("build") {
-                    returns(type)
+                    returns(entityType)
                     parameters.filter { it.isMandatory }.groupBy { it.group }.forEach { (_, parameters) ->
                         addStatement(
                             "check(%L)·{ \"%L·must·be·assigned.\" }",
@@ -151,7 +160,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
                     if (parameters.any { it.hasDefault }) {
                         addStatement(
                             "return %T::class.java.getConstructor(%L, %L, %L).newInstance(%L, %L, null)",
-                            type,
+                            entityClass,
                             parameters
                                 .map {
                                     "%T::class.%L".codeFmt(
@@ -185,7 +194,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
                     } else {
                         addStatement(
                             "return %T(%L)",
-                            type,
+                            entityClass,
                             parameters.map { (if (it.typeName.isNullable) "%L" else "%L!!").codeFmt(it.name) }.joinToCode(),
                         )
                     }
@@ -197,13 +206,19 @@ class DslGenerator<A, T : A, C : A, P : A>(
             }
             addFunction(typePrefix.replaceFirstChar { it.lowercase(Locale.getDefault()) }) {
                 addModifiers(KModifier.INLINE)
+                for (typeParam in entityTypeParameters) {
+                    addTypeVariable(typeParam)
+                }
                 addParameter("initializer", builderType.asLambdaReceiver())
                 addStatement("return %T().apply(initializer).build()", builderType)
-                returns(type)
+                returns(entityType)
             }
-        }.writeTo(clazz, codeGenerator)
+        }.writeTo(entity, codeGenerator)
         return true
     }
+
+    private fun ClassName.parameterize(typeParameters: List<TypeVariableName>) =
+        if (typeParameters.isEmpty()) this else parameterizedBy(typeParameters)
 
     private fun TypeSpecBuilder.addParameterNestedSetter(parameter: Parameter) =
         addFunction(parameter.name) {
@@ -230,8 +245,8 @@ class DslGenerator<A, T : A, C : A, P : A>(
 
     private fun TypeSpecBuilder.addParameterBuilderStyleVarargSetter(
         parameter: Parameter,
-        builderType: ClassName,
-        type: ClassName,
+        builderType: TypeName,
+        entityClass: ClassName,
     ) = addFunction("with${parameter.name.replaceFirstChar { it.uppercase() }}") {
         val elementType =
             (parameter.typeName as ParameterizedTypeName).typeArguments.first().let {
@@ -242,25 +257,25 @@ class DslGenerator<A, T : A, C : A, P : A>(
         addStatement("this.%1L·= %1L.%2L()", parameter.name, parameter.collectionType!!.convertFunction)
         addStatement("return this")
         parameter.doc?.let { addKdoc(it) }
-        addKdoc("@see %T.%L", type, parameter.name)
+        addKdoc("@see %T.%L", entityClass, parameter.name)
     }
 
     private fun TypeSpecBuilder.addParameterBuilderStyleSetter(
         parameter: Parameter,
-        builderType: ClassName,
-        type: ClassName,
+        builderType: TypeName,
+        entityClass: ClassName,
     ) = addFunction("with${parameter.name.replaceFirstChar { it.uppercase() }}") {
         returns(builderType)
         addParameter(parameter.name, parameter.typeName)
         addStatement("this.%1L·= %1L", parameter.name)
         addStatement("return this")
         parameter.doc?.let { addKdoc(it) }
-        addKdoc("@see %T.%L", type, parameter.name)
+        addKdoc("@see %T.%L", entityClass, parameter.name)
     }
 
     private fun TypeSpecBuilder.addParameterProperty(
         parameter: Parameter,
-        type: ClassName,
+        entityClass: ClassName,
     ) = addProperty(parameter.name, parameter.typeName.nullable) {
         mutable(true)
         if (parameter.hasDefault) {
@@ -280,6 +295,6 @@ class DslGenerator<A, T : A, C : A, P : A>(
             }
         }
         parameter.doc?.let { addKdoc(it) }
-        addKdoc("@see %T.%L", type, parameter.name)
+        addKdoc("@see %T.%L", entityClass, parameter.name)
     }
 }

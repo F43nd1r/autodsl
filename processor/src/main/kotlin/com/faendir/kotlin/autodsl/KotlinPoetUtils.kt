@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
 
@@ -18,6 +19,7 @@ fun TypeName.toRawType(): ClassName =
         is ClassName -> this
         is WildcardTypeName -> this.inTypes.firstOrNull()?.toRawType() ?: this.outTypes.first().toRawType()
         is LambdaTypeName -> ClassName("kotlin", "Function${(if (receiver != null) 1 else 0) + parameters.size}")
+        is TypeVariableName -> Any::class.asClassName()
         else -> throw IllegalArgumentException("Unsupported conversion to raw type from $this")
     }
 
