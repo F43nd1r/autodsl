@@ -96,6 +96,8 @@ class KaptSourceInfoResolver(
 
     override fun Type.isAbstract(): Boolean = typeSpec.modifiers.contains(KModifier.ABSTRACT)
 
+    override fun Type.isDataClass(): Boolean = typeSpec.modifiers.contains(KModifier.DATA)
+
     override fun Type.getConstructors(): List<Constructor> {
         val constructorElements =
             element.enclosedElements
@@ -147,6 +149,11 @@ class KaptSourceInfoResolver(
         KModifier.PRIVATE !in constructorSpec.modifiers && KModifier.PROTECTED !in constructorSpec.modifiers
 
     override fun Type.getPrimaryConstructor(): Constructor? = getConstructors().find { it.isPrimary }
+
+    override fun Type.getPropertyNames(): Set<String> =
+        this.typeSpec.propertySpecs
+            .map { it.name }
+            .toSet()
 
     override fun Constructor.isValid(): Boolean = true
 

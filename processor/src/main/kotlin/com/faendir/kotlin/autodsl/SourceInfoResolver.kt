@@ -28,7 +28,11 @@ interface SourceInfoResolver<ANNOTATED, TYPE : ANNOTATED, CONSTRUCTOR : ANNOTATE
 
     fun TYPE.isAbstract(): Boolean
 
+    fun TYPE.isDataClass(): Boolean
+
     fun TYPE.getConstructors(): List<CONSTRUCTOR>
+
+    fun TYPE.getPropertyNames(): Set<String>
 
     fun CONSTRUCTOR.isAccessible(): Boolean
 

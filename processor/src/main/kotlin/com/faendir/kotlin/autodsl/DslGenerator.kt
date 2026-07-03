@@ -24,16 +24,16 @@ import com.squareup.kotlinpoet.joinToCode
 import io.github.enjoydambience.kotlinbard.TypeSpecBuilder
 import io.github.enjoydambience.kotlinbard.addAnnotation
 import io.github.enjoydambience.kotlinbard.addClass
+import io.github.enjoydambience.kotlinbard.addCode
 import io.github.enjoydambience.kotlinbard.addFunction
+import io.github.enjoydambience.kotlinbard.addParameter
 import io.github.enjoydambience.kotlinbard.addProperty
 import io.github.enjoydambience.kotlinbard.buildFile
 import io.github.enjoydambience.kotlinbard.codeFmt
+import io.github.enjoydambience.kotlinbard.controlFlow
+import io.github.enjoydambience.kotlinbard.`if`
 import io.github.enjoydambience.kotlinbard.nullable
 import java.util.Locale
-import kotlin.jvm.internal.DefaultConstructorMarker
-import kotlin.properties.Delegates
-
-const val DEFAULTS_BITFLAGS_FIELD_NAME = "_defaultsBitField"
 
 class DslGenerator<A, T : A, C : A, P : A>(
     private val kotlinVersion: KotlinVersion,
@@ -91,6 +91,50 @@ class DslGenerator<A, T : A, C : A, P : A>(
         return emptyList()
     }
 
+    private fun generateCopyExtension(clazz: T) {
+        val typeVariables = clazz.getTypeParameters()
+        val type =
+            if (typeVariables.isNotEmpty()) {
+                clazz.asClassName().parameterizedBy(typeVariables)
+            } else {
+                clazz.asClassName()
+            }
+        val constructors = clazz.getConstructors().filter { it.isAccessible() }
+        if (constructors.isEmpty()) {
+            error("must have at least one public or internal constructor", clazz)
+            return
+        }
+        val constructor =
+            constructors.firstOrNull { it.hasAnnotation(AutoDslConstructor::class) }
+                ?: clazz.getPrimaryConstructor()
+                ?: constructors.first()
+        val parameters = constructor.getParameters()
+        val propertyNames = clazz.getPropertyNames()
+
+        buildFile(type.toRawType().packageName, "${type.toRawType().simpleNames.joinToString("")}Copy") {
+            addFunction("copy") {
+                if (typeVariables.isNotEmpty()) {
+                    addTypeVariables(typeVariables)
+                }
+                receiver(type)
+                returns(type)
+
+                for (parameter in parameters) {
+                    val hasProperty = propertyNames.contains(parameter.getName())
+
+                    addParameter(parameter.getName(), parameter.getTypeName(clazz)) {
+                        if (hasProperty) {
+                            defaultValue("this.%L", parameter.getName())
+                        }
+                    }
+                }
+
+                val args = parameters.joinToString(", ") { "${it.getName()} = ${it.getName()}" }
+                addStatement("return %T(%L)", type, args)
+            }
+        }.writeTo(clazz, codeGenerator)
+    }
+
     /**
      * returns true if class generation was successful
      */
@@ -101,6 +145,9 @@ class DslGenerator<A, T : A, C : A, P : A>(
         if (entity.isAbstract()) {
             error("must not be abstract", entity)
             return false
+        }
+        if (!entity.isDataClass()) {
+            generateCopyExtension(entity)
         }
         val constructors = entity.getConstructors().filter { it.isAccessible() }
         if (constructors.isEmpty()) {
@@ -121,20 +168,11 @@ class DslGenerator<A, T : A, C : A, P : A>(
         val entityTypeParameters = entity.getTypeParameters()
         val entityType: TypeName = entityClass.parameterize(entityTypeParameters)
         val builderType: TypeName = builderClass.parameterize(entityTypeParameters)
-        val bitFieldIndices = 0..parameters.size / 32
         val typePrefix = entityClass.simpleNames.joinToString("")
         buildFile(entityClass.packageName, "${typePrefix}Dsl") {
             addClass(builderClass.simpleName) {
                 for (typeParam in entityTypeParameters) {
                     addTypeVariable(typeParam)
-                }
-                if (parameters.any { it.hasDefault }) {
-                    for (i in bitFieldIndices) {
-                        addProperty(DEFAULTS_BITFLAGS_FIELD_NAME + i, INT, KModifier.PRIVATE) {
-                            mutable(true)
-                            initializer("-1")
-                        }
-                    }
                 }
                 for (parameter in parameters) {
                     addParameterProperty(parameter, entityClass)
@@ -157,46 +195,26 @@ class DslGenerator<A, T : A, C : A, P : A>(
                             parameters.joinToString(separator = ",·", prefix = if (parameters.size > 1) "One·of·" else "") { it.name },
                         )
                     }
-                    if (parameters.any { it.hasDefault }) {
-                        addStatement(
-                            "return %T::class.java.getConstructor(%L, %L, %L).newInstance(%L, %L, null)",
-                            entityClass,
-                            parameters
-                                .map {
-                                    "%T::class.%L".codeFmt(
-                                        it.typeName.toRawType().nonnull,
-                                        if (it.typeName.isNullable) "javaObjectType" else "java",
-                                    )
-                                }.joinToCode(),
-                            bitFieldIndices.map { "%T::class.java".codeFmt(INT) }.joinToCode(),
-                            if (kotlinVersion.isAtLeast(1, 5)) {
-                                "%T::class.java".codeFmt(DefaultConstructorMarker::class.asClassName())
-                            } else {
-                                "Class.forName(%S)".codeFmt(DefaultConstructorMarker::class.java.name)
-                            },
-                            parameters
-                                .map {
-                                    when {
-                                        it.typeName.isNullable -> "%L"
-                                        it.typeName == BOOLEAN -> "%L ?: false"
-                                        it.typeName == BYTE -> "%L ?: 0"
-                                        it.typeName == SHORT -> "%L ?: 0"
-                                        it.typeName == INT -> "%L ?: 0"
-                                        it.typeName == LONG -> "%L ?: 0"
-                                        it.typeName == CHAR -> "%L ?: '\\u0000'"
-                                        it.typeName == FLOAT -> "%L ?: 0.0f"
-                                        it.typeName == DOUBLE -> "%L ?: 0.0"
-                                        else -> "%L"
-                                    }.codeFmt(it.name)
-                                }.joinToCode(),
-                            bitFieldIndices.map { "%L".codeFmt(DEFAULTS_BITFLAGS_FIELD_NAME + it) }.joinToCode(),
-                        )
+
+                    val constructorArgs =
+                        parameters
+                            .filter { !it.hasDefault }
+                            .joinToString(", ") { param ->
+                                val assertion = if (param.typeName.isNullable) "" else "!!"
+                                "${param.name} = this.${param.name}$assertion"
+                            }
+
+                    addStatement("val base = %T(%L)", entityType, constructorArgs)
+
+                    val copyArgs =
+                        parameters
+                            .filter { it.hasDefault }
+                            .joinToString(", ") { "${it.name} = this.${it.name} ?: base.${it.name}" }
+
+                    if (copyArgs.isBlank()) {
+                        addStatement("return base")
                     } else {
-                        addStatement(
-                            "return %T(%L)",
-                            entityClass,
-                            parameters.map { (if (it.typeName.isNullable) "%L" else "%L!!").codeFmt(it.name) }.joinToCode(),
-                        )
+                        addStatement("return base.copy(%L)", copyArgs)
                     }
                 }
                 addAnnotation(DslInspect::class)
@@ -278,16 +296,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
         entityClass: ClassName,
     ) = addProperty(parameter.name, parameter.typeName.nullable) {
         mutable(true)
-        if (parameter.hasDefault) {
-            delegate(
-                "%1T.observable(null)·{·_, _, _·-> %2L·= %2L and %3L }",
-                Delegates::class.asClassName(),
-                DEFAULTS_BITFLAGS_FIELD_NAME + (parameter.index / 32),
-                (1 shl parameter.index % 32).inv(),
-            )
-        } else {
-            initializer("null")
-        }
+        initializer("null")
         if (parameter.isMandatory) {
             addAnnotation(DslMandatory::class) {
                 useSiteTarget(AnnotationSpec.UseSiteTarget.SET)
