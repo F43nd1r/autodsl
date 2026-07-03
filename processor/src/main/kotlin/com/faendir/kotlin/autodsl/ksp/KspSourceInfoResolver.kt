@@ -19,10 +19,12 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.ksp.TypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
+import io.github.enjoydambience.kotlinbard.nullable
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import com.google.devtools.ksp.getConstructors as superGetConstructors
@@ -71,9 +73,9 @@ class KspSourceInfoResolver(
 
     override fun KSAnnotated.getQualifiedName(): String? = (this as? KSClassDeclaration)?.qualifiedName?.asString()
 
-    override fun KSClassDeclaration.isAbstract(): Boolean = modifiers.contains(Modifier.ABSTRACT)
+    override fun KSClassDeclaration.isAbstract(): Boolean = Modifier.ABSTRACT in modifiers
 
-    override fun KSClassDeclaration.isDataClass(): Boolean = modifiers.contains(Modifier.DATA)
+    override fun KSClassDeclaration.isDataClass(): Boolean = Modifier.DATA in modifiers
 
     override fun KSClassDeclaration.getConstructors(): List<KSFunctionDeclaration> = superGetConstructors().toList()
 
@@ -83,28 +85,34 @@ class KspSourceInfoResolver(
 
     override fun KSClassDeclaration.getPrimaryConstructor(): KSFunctionDeclaration? = primaryConstructor
 
+    override fun KSFunctionDeclaration.getParentType(): KSClassDeclaration = parentDeclaration as KSClassDeclaration
+
     override fun KSFunctionDeclaration.isValid(): Boolean = validate()
 
     override fun KSFunctionDeclaration.getParameters(): List<KSValueParameter> = parameters
 
     override fun KSClassDeclaration.asClassName(): ClassName = toClassName()
 
-    override fun KSClassDeclaration.getTypeParameters(): List<TypeVariableName> {
-        val resolver = typeParameters.toTypeParameterResolver()
-        return typeParameters.map { it.toTypeVariableName(resolver) }
-    }
-
     override fun KSValueParameter.getTypeDeclaration(): KSClassDeclaration? = type.resolve().declaration as? KSClassDeclaration
 
     override fun KSValueParameter.getTypeArguments(): List<KSClassDeclaration> =
         type.resolve().arguments.mapNotNull { it.type?.resolve()?.declaration as? KSClassDeclaration }
 
-    override fun KSValueParameter.getTypeName(enclosingType: KSClassDeclaration): TypeName =
-        type.toTypeName(enclosingType.typeParameters.toTypeParameterResolver())
+    override fun KSValueParameter.getTypeName(parent: KSClassDeclaration?): TypeName =
+        type.toTypeName(parent?.typeParameters?.toTypeParameterResolver() ?: TypeParameterResolver.EMPTY)
 
     override fun KSValueParameter.getName(): String = name!!.asString()
 
     override fun KSValueParameter.hasDefault(): Boolean = hasDefault
 
     override fun KSValueParameter.getDoc(): String? = null
+
+    override fun KSClassDeclaration.getTypeVariableNames(): List<TypeVariableName> =
+        typeParameters.map { it.toTypeVariableName(typeParameters.toTypeParameterResolver()) }.map { typeVariableName ->
+            if (typeVariableName.bounds.contains(ClassName("kotlin", "Any").nullable)) {
+                typeVariableName.copy(bounds = typeVariableName.bounds.filterNot { it == ClassName("kotlin", "Any").nullable })
+            } else {
+                typeVariableName
+            }
+        }
 }

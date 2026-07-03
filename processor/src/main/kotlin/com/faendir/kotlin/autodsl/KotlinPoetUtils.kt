@@ -1,5 +1,6 @@
 package com.faendir.kotlin.autodsl
 
+import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName
@@ -19,8 +20,28 @@ fun TypeName.toRawType(): ClassName =
         is ClassName -> this
         is WildcardTypeName -> this.inTypes.firstOrNull()?.toRawType() ?: this.outTypes.first().toRawType()
         is LambdaTypeName -> ClassName("kotlin", "Function${(if (receiver != null) 1 else 0) + parameters.size}")
-        is TypeVariableName -> Any::class.asClassName()
         else -> throw IllegalArgumentException("Unsupported conversion to raw type from $this")
+    }
+
+fun TypeName.withoutVariance(): TypeName =
+    when (this) {
+        is ParameterizedTypeName -> {
+            val newArgs =
+                typeArguments.map { arg ->
+                    // Strip the variance/projection, keep the underlying type
+                    if (arg is WildcardTypeName) {
+                        // This extracts the bound and removes the out/in projection
+                        arg.inTypes.firstOrNull() ?: arg.outTypes.firstOrNull()  ?: ANY
+                    } else {
+                        arg
+                    }
+                }
+            this.rawType.parameterizedBy(newArgs)
+        }
+
+        else -> {
+            this
+        }
     }
 
 fun TypeName.withoutAnnotations(): TypeName =
@@ -67,6 +88,11 @@ fun TypeName.withoutAnnotations(): TypeName =
 
 fun ClassName.withBuilderSuffix() = ClassName(packageName, "${simpleNames.joinToString("")}Builder")
 
-fun TypeName.withBuilderSuffix() = toRawType().withBuilderSuffix()
+fun TypeName.withBuilderSuffix(): TypeName =
+    when (this) {
+        is ParameterizedTypeName -> rawType.withBuilderSuffix().parameterizedBy(typeArguments)
+        is ClassName -> withBuilderSuffix()
+        else -> toRawType().withBuilderSuffix() // Fallback for other TypeName types, though unlikely to be reached for main classes
+    }
 
 fun TypeName.asLambdaReceiver() = LambdaTypeName.get(receiver = this, returnType = Unit::class.asClassName())

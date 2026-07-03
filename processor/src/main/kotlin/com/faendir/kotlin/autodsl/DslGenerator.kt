@@ -16,6 +16,7 @@ import com.squareup.kotlinpoet.LONG
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.SHORT
+import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
@@ -26,6 +27,8 @@ import io.github.enjoydambience.kotlinbard.addAnnotation
 import io.github.enjoydambience.kotlinbard.addClass
 import io.github.enjoydambience.kotlinbard.addCode
 import io.github.enjoydambience.kotlinbard.addFunction
+import io.github.enjoydambience.kotlinbard.addInterface
+import io.github.enjoydambience.kotlinbard.addObject
 import io.github.enjoydambience.kotlinbard.addParameter
 import io.github.enjoydambience.kotlinbard.addProperty
 import io.github.enjoydambience.kotlinbard.buildFile
@@ -95,7 +98,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
     }
 
     private fun generateCopyExtension(clazz: T) {
-        val typeVariables = clazz.getTypeParameters()
+        val typeVariables = clazz.getTypeVariableNames()
         val type =
             if (typeVariables.isNotEmpty()) {
                 clazz.asClassName().parameterizedBy(typeVariables)
@@ -165,17 +168,17 @@ class DslGenerator<A, T : A, C : A, P : A>(
             // defer processing
             return false
         }
-        val parameters = parameterFactory.getParameters(constructor, entity)
+        val parameters = parameterFactory.getParameters(constructor)
         val entityClass = entity.asClassName()
         val builderClass = entityClass.withBuilderSuffix()
-        val entityTypeParameters = entity.getTypeParameters()
+        val entityTypeParameters = entity.getTypeVariableNames()
         val entityType: TypeName = entityClass.parameterize(entityTypeParameters)
         val builderType: TypeName = builderClass.parameterize(entityTypeParameters)
         val bitFieldIndices = 0..parameters.size / 32
         val typePrefix = entityClass.simpleNames.joinToString("")
         buildFile(entityClass.packageName, "${typePrefix}Dsl") {
             addClass(builderClass.simpleName) {
-                for (typeParam in entityTypeParameters) {
+                entityTypeParameters.forEach { typeParam ->
                     addTypeVariable(typeParam)
                 }
                 if (parameters.any { it.hasDefault }) {
@@ -228,10 +231,11 @@ class DslGenerator<A, T : A, C : A, P : A>(
                                 "${param.name} = if (($fieldName and $bitMask == 0)) this.${param.name}$assertion else base.${param.name}"
                             }
 
+                    val cast = if (entityType is ParameterizedTypeName) " as %L".codeFmt(entityType) else ""
                     if (copyArgs.isBlank()) {
-                        addStatement("return base")
+                        addStatement("return base%L", cast)
                     } else {
-                        addStatement("return base.copy(%L)", copyArgs)
+                        addStatement("return base.copy(%L)%L", copyArgs, cast)
                     }
                 }
                 addAnnotation(DslInspect::class)
@@ -241,7 +245,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
             }
             addFunction(typePrefix.replaceFirstChar { it.lowercase(Locale.getDefault()) }) {
                 addModifiers(KModifier.INLINE)
-                for (typeParam in entityTypeParameters) {
+                entityTypeParameters.forEach { typeParam ->
                     addTypeVariable(typeParam)
                 }
                 addParameter("initializer", builderType.asLambdaReceiver())
@@ -258,23 +262,82 @@ class DslGenerator<A, T : A, C : A, P : A>(
     private fun TypeSpecBuilder.addParameterNestedSetter(parameter: Parameter) =
         addFunction(parameter.name) {
             addModifiers(KModifier.INLINE)
-            val nestedBuilderType = parameter.typeName.withBuilderSuffix()
+            val nestedBuilderType =
+                if (parameter.typeName is ParameterizedTypeName) {
+                    val classVars = parameter.typeVariableNames!!
+                    val typeArgs =
+                        parameter.typeName.typeArguments.mapIndexed { index, arg ->
+                            if (arg is WildcardTypeName) {
+                                if (arg.outTypes == STAR.outTypes) {
+                                    val type = TypeVariableName(classVars[index].name + index, classVars[index].variance)
+                                    addTypeVariable(type)
+                                    type
+                                } else {
+                                    val type = TypeVariableName(classVars[index].name + index, arg.outTypes, classVars[index].variance)
+                                    addTypeVariable(type)
+                                    type
+                                }
+                            } else {
+                                arg
+                            }
+                        }
+                    parameter.typeName.rawType
+                        .parameterizedBy(typeArgs)
+                        .withBuilderSuffix()
+                } else {
+                    parameter.typeName.withBuilderSuffix()
+                }
+            addAnnotation(ClassName("kotlin", "OptIn")) {
+                addMember("%T::class", ClassName("kotlin.contracts", "ExperimentalContracts"))
+            }
             addParameter("initializer", nestedBuilderType.asLambdaReceiver())
-            addStatement("val result = %T().apply(initializer).build()", nestedBuilderType)
-            addStatement("%L = result", parameter.name)
-            addStatement("return result")
+            addCode {
+                addStatement("kotlin.contracts.contract { callsInPlace(initializer, kotlin.contracts.InvocationKind.EXACTLY_ONCE) }")
+                addStatement("val result = %T().apply(initializer).build()", nestedBuilderType)
+                addStatement("%L = result", parameter.name)
+                addStatement("return result")
+            }
             returns(parameter.typeName.nonnull)
         }
 
     private fun TypeSpecBuilder.addParameterNestedAdder(parameter: Parameter) =
         addFunction(parameter.collectionType!!.singular) {
             addModifiers(KModifier.INLINE)
-            val elementType = (parameter.typeName as ParameterizedTypeName).typeArguments.first()
+            val rawElementType = (parameter.typeName as ParameterizedTypeName).typeArguments.first()
+            val elementType =
+                if (rawElementType is ParameterizedTypeName) {
+                    val classVars = parameter.typeVariableNames!!
+                    val typeArgs =
+                        rawElementType.typeArguments.mapIndexed { index, arg ->
+                            if (arg is WildcardTypeName) {
+                                if (arg.outTypes == STAR.outTypes) {
+                                    val type = TypeVariableName(classVars[index].name + index, classVars[index].variance)
+                                    addTypeVariable(type)
+                                    type
+                                } else {
+                                    val type = TypeVariableName(classVars[index].name + index, arg.outTypes, classVars[index].variance)
+                                    addTypeVariable(type)
+                                    type
+                                }
+                            } else {
+                                arg
+                            }
+                        }
+                    rawElementType.rawType.parameterizedBy(typeArgs)
+                } else {
+                    rawElementType
+                }
             val nestedBuilderType = elementType.withBuilderSuffix()
+            addAnnotation(ClassName("kotlin", "OptIn")) {
+                addMember("%T::class", ClassName("kotlin.contracts", "ExperimentalContracts"))
+            }
             addParameter("initializer", nestedBuilderType.asLambdaReceiver())
-            addStatement("val result = %T().apply(initializer).build()", nestedBuilderType)
-            addStatement("%1L = %1L?.plus(result) ?: %2L(result)", parameter.name, parameter.collectionType.createFunction)
-            addStatement("return result")
+            addCode {
+                addStatement("kotlin.contracts.contract { callsInPlace(initializer, kotlin.contracts.InvocationKind.EXACTLY_ONCE) }")
+                addStatement("val result = %T().apply(initializer).build()", nestedBuilderType)
+                addStatement("%1L = %1L?.plus(result) ?: %2L(result)", parameter.name, parameter.collectionType.createFunction)
+                addStatement("return result")
+            }
             returns(elementType.nonnull)
         }
 
@@ -332,4 +395,5 @@ class DslGenerator<A, T : A, C : A, P : A>(
         parameter.doc?.let { addKdoc(it) }
         addKdoc("@see %T.%L", entityClass, parameter.name)
     }
+
 }

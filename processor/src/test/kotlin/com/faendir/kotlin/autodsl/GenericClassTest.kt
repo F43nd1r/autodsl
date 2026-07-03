@@ -97,4 +97,119 @@ class GenericClassTest {
                 }
             """,
         )
+
+    @TestFactory
+    fun `multiple type parameters`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Entity<T, U>(val a: T, val b: U)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    val entity = entity<String, Int> {
+                        a = "Hi"
+                        b = 1
+                    }
+                    expectThat(entity.a).isEqualTo("Hi")
+                    expectThat(entity.b).isEqualTo(1)
+                }
+            """,
+        )
+
+    @TestFactory
+    fun `nested dsl with type parameter`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Entity<T>(val a: T)
+                @AutoDsl
+                class Root(val entity: Entity<String>)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(root {
+                        entity {
+                            a = "Hi"
+                        }
+                    }.entity.a).isEqualTo("Hi")
+                }
+            """,
+        )
+
+    @TestFactory
+    fun `nested dsl with multiple type parameters`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Entity<T, U>(val a: T, val b: U)
+                @AutoDsl
+                class Root(val entity: Entity<String, Int>)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(root {
+                        entity {
+                            a = "Hi"
+                            b = 1
+                        }
+                    }.entity.a).isEqualTo("Hi")
+                }
+            """,
+        )
+
+    @TestFactory
+    fun `nested dsl with star projection`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Entity<T>(val a: T)
+                @AutoDsl
+                class Root(val entity: Entity<*>)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(root {
+                        entity<String> {
+                            a = "Hi"
+                        }
+                    }.entity.a).isEqualTo("Hi")
+                }
+            """,
+        )
+
+    @TestFactory
+    fun `nested dsl with out projection`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Entity<T>(val a: T)
+                @AutoDsl
+                class Root(val entity: Entity<out String>)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(root {
+                        entity {
+                            a = "Hi"
+                        }
+                    }.entity.a).isEqualTo("Hi")
+                }
+            """,
+        )
 }

@@ -38,19 +38,21 @@ interface SourceInfoResolver<ANNOTATED, TYPE : ANNOTATED, CONSTRUCTOR : ANNOTATE
 
     fun TYPE.getPrimaryConstructor(): CONSTRUCTOR?
 
+    fun CONSTRUCTOR.getParentType(): TYPE
+
     fun CONSTRUCTOR.isValid(): Boolean
 
     fun CONSTRUCTOR.getParameters(): List<PARAMETER>
 
     fun TYPE.asClassName(): ClassName
 
-    fun TYPE.getTypeParameters(): List<TypeVariableName>
+    fun TYPE.getTypeVariableNames(): List<TypeVariableName>
 
     fun PARAMETER.getTypeDeclaration(): TYPE?
 
     fun PARAMETER.getTypeArguments(): List<TYPE>
 
-    fun PARAMETER.getTypeName(enclosingType: TYPE): TypeName
+    fun PARAMETER.getTypeName(parent: TYPE? = null): TypeName
 
     fun PARAMETER.getName(): String
 

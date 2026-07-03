@@ -9,6 +9,7 @@ import com.faendir.kotlin.autodsl.parameter.CollectionType.SetType
 import com.faendir.kotlin.autodsl.toRawType
 import com.shadow.pluralize.singularize
 import com.shadow.pluralize.utils.Plurality
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import kotlin.reflect.KClass
 
@@ -21,13 +22,10 @@ class ParameterFactory<A, T : A, C : A, P : A>(
     private val iterable = Iterable::class.asClassName()
 
     @JvmName("getParametersFromConstructor")
-    fun getParameters(
-        constructor: C,
-        enclosingType: T,
-    ): List<Parameter> =
+    fun getParameters(constructor: C): List<Parameter> =
         constructor.getParameters().withIndex().map { (index, parameter) ->
-            val type = parameter.getTypeName(enclosingType)
-            val rawType = type.toRawType()
+            val type = parameter.getTypeName(constructor.getParentType())
+            val rawType = if (type !is TypeVariableName) type.toRawType() else null
             val (hasNestedDsl, collectionType) =
                 when (rawType) {
                     set -> {
@@ -43,15 +41,22 @@ class ParameterFactory<A, T : A, C : A, P : A>(
                         (parameter.getTypeDeclaration()?.hasAnnotation(AutoDsl::class) == true) to null
                     }
                 }
+            val typeVariableNames =
+                if (collectionType != null) {
+                    parameter.getTypeArguments().firstOrNull()?.getTypeVariableNames()
+                } else {
+                    parameter.getTypeDeclaration()?.getTypeVariableNames()
+                }
             Parameter(
-                typeName = type,
-                name = parameter.getName(),
-                doc = parameter.getDoc(),
-                hasDefault = parameter.hasDefault(),
-                requiredGroup = parameter.getAnnotationProperty(AutoDslRequired::class, AutoDslRequired::group),
-                index = index,
-                hasNestedDsl = hasNestedDsl,
-                collectionType = collectionType,
+                type,
+                typeVariableNames,
+                parameter.getName(),
+                parameter.getDoc(),
+                parameter.hasDefault(),
+                parameter.getAnnotationProperty(AutoDslRequired::class, AutoDslRequired::group),
+                index,
+                hasNestedDsl,
+                collectionType,
             )
         }
 

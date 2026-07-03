@@ -4,6 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.name.ClassId
@@ -31,6 +32,10 @@ fun TypeName.mapToKotlin(): TypeName =
             } else {
                 WildcardTypeName.consumerOf(inTypes.first().mapToKotlin())
             }
+        }
+
+        is TypeVariableName -> {
+            this
         }
 
         else -> {
