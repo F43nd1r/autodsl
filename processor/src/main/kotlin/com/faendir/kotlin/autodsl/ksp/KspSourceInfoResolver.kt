@@ -77,8 +77,7 @@ class KspSourceInfoResolver(
 
     override fun KSClassDeclaration.getConstructors(): List<KSFunctionDeclaration> = superGetConstructors().toList()
 
-    override fun KSClassDeclaration.getPropertyNames(): Set<String> =
-        getAllProperties().map { it.simpleName.asString() }.toSet()
+    override fun KSClassDeclaration.getPropertyNames(): Set<String> = getAllProperties().map { it.simpleName.asString() }.toSet()
 
     override fun KSFunctionDeclaration.isAccessible(): Boolean = isPublic() || isInternal()
 
