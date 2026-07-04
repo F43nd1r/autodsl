@@ -34,6 +34,9 @@ import io.github.enjoydambience.kotlinbard.controlFlow
 import io.github.enjoydambience.kotlinbard.`if`
 import io.github.enjoydambience.kotlinbard.nullable
 import java.util.Locale
+import kotlin.properties.Delegates
+
+const val DEFAULTS_BITFLAGS_FIELD_NAME = "_defaultsBitField"
 
 class DslGenerator<A, T : A, C : A, P : A>(
     private val kotlinVersion: KotlinVersion,
@@ -168,11 +171,20 @@ class DslGenerator<A, T : A, C : A, P : A>(
         val entityTypeParameters = entity.getTypeParameters()
         val entityType: TypeName = entityClass.parameterize(entityTypeParameters)
         val builderType: TypeName = builderClass.parameterize(entityTypeParameters)
+        val bitFieldIndices = 0..parameters.size / 32
         val typePrefix = entityClass.simpleNames.joinToString("")
         buildFile(entityClass.packageName, "${typePrefix}Dsl") {
             addClass(builderClass.simpleName) {
                 for (typeParam in entityTypeParameters) {
                     addTypeVariable(typeParam)
+                }
+                if (parameters.any { it.hasDefault }) {
+                    for (i in bitFieldIndices) {
+                        addProperty(DEFAULTS_BITFLAGS_FIELD_NAME + i, INT, KModifier.PRIVATE) {
+                            mutable(true)
+                            initializer("-1")
+                        }
+                    }
                 }
                 for (parameter in parameters) {
                     addParameterProperty(parameter, entityClass)
@@ -209,7 +221,12 @@ class DslGenerator<A, T : A, C : A, P : A>(
                     val copyArgs =
                         parameters
                             .filter { it.hasDefault }
-                            .joinToString(", ") { "${it.name} = this.${it.name} ?: base.${it.name}" }
+                            .joinToString(", ") { param ->
+                                val fieldName = DEFAULTS_BITFLAGS_FIELD_NAME + (param.index / 32)
+                                val bitMask = 1 shl (param.index % 32)
+                                val assertion = if (param.typeName.isNullable) "" else "!!"
+                                "${param.name} = if (($fieldName and $bitMask == 0)) this.${param.name}$assertion else base.${param.name}"
+                            }
 
                     if (copyArgs.isBlank()) {
                         addStatement("return base")
@@ -296,7 +313,16 @@ class DslGenerator<A, T : A, C : A, P : A>(
         entityClass: ClassName,
     ) = addProperty(parameter.name, parameter.typeName.nullable) {
         mutable(true)
-        initializer("null")
+        if (parameter.hasDefault) {
+            delegate(
+                "%1T.observable(null)·{·_, _, _·-> %2L·= %2L and %3L }",
+                Delegates::class.asClassName(),
+                DEFAULTS_BITFLAGS_FIELD_NAME + (parameter.index / 32),
+                (1 shl parameter.index % 32).inv(),
+            )
+        } else {
+            initializer("null")
+        }
         if (parameter.isMandatory) {
             addAnnotation(DslMandatory::class) {
                 useSiteTarget(AnnotationSpec.UseSiteTarget.SET)

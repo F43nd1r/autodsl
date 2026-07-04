@@ -220,4 +220,127 @@ class DefaultValuesTest {
                 }
             """,
         )
+
+    @TestFactory
+    fun `default value in data class`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                data class Entity(val a: String, val b: String = "Hi")
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(entity {
+                        a = "a"
+                    }.b).isEqualTo("Hi")
+                }
+            """,
+        )
+
+    @TestFactory
+    fun `explicit null overrides a non-null default value`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Entity(val a: String? = "Hi")
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(entity {
+                        a = null
+                    }.a).isEqualTo(null)
+                }
+            """,
+        )
+
+    @TestFactory
+    fun `boolean default value overridden with false`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Entity(val a: Boolean = true)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(entity {
+                        a = false
+                    }.a).isEqualTo(false)
+                }
+            """,
+        )
+
+    @TestFactory
+    fun `multiple default values with a partial override`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Entity(val a: String = "a", val b: String = "b", val c: String = "c")
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(entity {
+                        b = "B"
+                    }) {
+                        get(Entity::a).isEqualTo("a")
+                        get(Entity::b).isEqualTo("B")
+                        get(Entity::c).isEqualTo("c")
+                    }
+                }
+            """,
+        )
+
+    @TestFactory
+    fun `default value referencing another constructor parameter`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Entity(val a: Int, val b: Int = a * 2)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(entity {
+                        a = 5
+                    }.b).isEqualTo(10)
+                }
+            """,
+        )
+
+    @TestFactory
+    fun `default value combined with nested dsl`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Address(val city: String)
+                @AutoDsl
+                class Entity(val address: Address? = null)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(entity {
+                        address {
+                            city = "NYC"
+                        }
+                    }.address?.city).isEqualTo("NYC")
+                    expectThat(entity {}.address).isEqualTo(null)
+                }
+            """,
+        )
 }
