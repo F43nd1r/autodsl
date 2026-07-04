@@ -98,7 +98,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
     }
 
     private fun generateCopyExtension(clazz: T) {
-        val typeVariables = clazz.getTypeVariableNames()
+        val typeVariables = clazz.getTypeVariableNames().map { it.withoutVariance() as TypeVariableName }
         val type =
             if (typeVariables.isNotEmpty()) {
                 clazz.asClassName().parameterizedBy(typeVariables)
@@ -171,7 +171,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
         val parameters = parameterFactory.getParameters(constructor)
         val entityClass = entity.asClassName()
         val builderClass = entityClass.withBuilderSuffix()
-        val entityTypeParameters = entity.getTypeVariableNames()
+        val entityTypeParameters = entity.getTypeVariableNames().map { it.withoutVariance() as TypeVariableName }
         val entityType: TypeName = entityClass.parameterize(entityTypeParameters)
         val builderType: TypeName = builderClass.parameterize(entityTypeParameters)
         val bitFieldIndices = 0..parameters.size / 32
@@ -395,5 +395,4 @@ class DslGenerator<A, T : A, C : A, P : A>(
         parameter.doc?.let { addKdoc(it) }
         addKdoc("@see %T.%L", entityClass, parameter.name)
     }
-
 }

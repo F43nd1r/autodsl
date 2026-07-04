@@ -222,7 +222,13 @@ class KaptSourceInfoResolver(
 
     override fun Type.getTypeVariableNames(): List<TypeVariableName> =
         typeSpec.typeVariables.map { typeVariableName ->
-            typeVariableName.copy(bounds = typeVariableName.bounds.filterNot { it == ClassName("kotlin", "Any") || it == ClassName("java.lang", "Object") })
+            typeVariableName.copy(
+                bounds =
+                    typeVariableName.bounds.filterNot {
+                        it == ClassName("kotlin", "Any") ||
+                            it == ClassName("java.lang", "Object")
+                    },
+            )
         }
 }
 

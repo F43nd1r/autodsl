@@ -9,6 +9,7 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
+import io.github.enjoydambience.kotlinbard.reified
 
 @Suppress("UNCHECKED_CAST")
 val <T : TypeName> T.nonnull: T
@@ -31,12 +32,16 @@ fun TypeName.withoutVariance(): TypeName =
                     // Strip the variance/projection, keep the underlying type
                     if (arg is WildcardTypeName) {
                         // This extracts the bound and removes the out/in projection
-                        arg.inTypes.firstOrNull() ?: arg.outTypes.firstOrNull()  ?: ANY
+                        arg.inTypes.firstOrNull() ?: arg.outTypes.firstOrNull() ?: ANY
                     } else {
                         arg
                     }
                 }
             this.rawType.parameterizedBy(newArgs)
+        }
+
+        is TypeVariableName -> {
+            TypeVariableName(name, bounds).copy(nullable = this.isNullable, annotations = this.annotations, tags = this.tags)
         }
 
         else -> {
