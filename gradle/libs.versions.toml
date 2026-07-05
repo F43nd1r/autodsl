@@ -12,7 +12,7 @@ strikt = "0.35.1"
 intellijPlugin = "2.17.0"
 intellijIdea = "2025.3"
 kotlinx-serialization = "1.11.0"
-kotlinter = "5.5.0"
+kotlinter = "5.6.0"
 
 [plugins]
 intellijPlugin = { id = "org.jetbrains.intellij.platform", version.ref = "intellijPlugin" }
