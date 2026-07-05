@@ -221,7 +221,6 @@ class DefaultValuesTest {
             """,
         )
 
-
     @TestFactory
     fun `default value referencing another mandatory constructor parameter`() =
         compile(
