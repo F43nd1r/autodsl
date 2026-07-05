@@ -27,7 +27,7 @@ class DefaultValuesTest {
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(
-                    val a: Boolean = true, 
+                    val a: Boolean = true,
                     val b: Byte = 1,
                     val c: Short = 2,
                     val d: Int = 3,
@@ -61,7 +61,7 @@ class DefaultValuesTest {
                 import com.faendir.kotlin.autodsl.AutoDsl
                 @AutoDsl
                 class Entity(
-                    val a: Boolean?, 
+                    val a: Boolean?,
                     val b: Byte?,
                     val c: Short?,
                     val d: Int?,
@@ -217,6 +217,45 @@ class DefaultValuesTest {
                     expectThat(entity.a31).isEqualTo("a31")
                     expectThat(entity.a32).isEqualTo("a32")
                     expectThat(entity.a33).isEqualTo("a33")
+                }
+            """,
+        )
+
+
+    @TestFactory
+    fun `default value referencing another mandatory constructor parameter`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Entity(val a: Int, val b: Int = a * 2)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(entity {
+                        a = 5
+                    }.b).isEqualTo(10)
+                }
+            """,
+        )
+
+    @TestFactory
+    fun `default value referencing another default constructor parameter`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                @AutoDsl
+                class Entity(val a: Int = 1, val b: Int = a * 2)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(entity {
+                        a = 5
+                    }.b).isEqualTo(10)
                 }
             """,
         )
