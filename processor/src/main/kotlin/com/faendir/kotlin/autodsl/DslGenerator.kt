@@ -158,39 +158,71 @@ class DslGenerator<A, T : A, C : A, P : A>(
                         )
                     }
                     if (parameters.any { it.hasDefault }) {
-                        addStatement(
-                            "return %T::class.java.getConstructor(%L, %L, %L).newInstance(%L, %L, null)",
-                            entityClass,
-                            parameters
-                                .map {
-                                    "%T::class.%L".codeFmt(
-                                        it.typeName.toRawType().nonnull,
-                                        if (it.typeName.isNullable) "javaObjectType" else "java",
-                                    )
-                                }.joinToCode(),
-                            bitFieldIndices.map { "%T::class.java".codeFmt(INT) }.joinToCode(),
-                            if (kotlinVersion.isAtLeast(1, 5)) {
-                                "%T::class.java".codeFmt(DefaultConstructorMarker::class.asClassName())
-                            } else {
-                                "Class.forName(%S)".codeFmt(DefaultConstructorMarker::class.java.name)
-                            },
-                            parameters
-                                .map {
-                                    when {
-                                        it.typeName.isNullable -> "%L"
-                                        it.typeName == BOOLEAN -> "%L ?: false"
-                                        it.typeName == BYTE -> "%L ?: 0"
-                                        it.typeName == SHORT -> "%L ?: 0"
-                                        it.typeName == INT -> "%L ?: 0"
-                                        it.typeName == LONG -> "%L ?: 0"
-                                        it.typeName == CHAR -> "%L ?: '\\u0000'"
-                                        it.typeName == FLOAT -> "%L ?: 0.0f"
-                                        it.typeName == DOUBLE -> "%L ?: 0.0"
-                                        else -> "%L"
-                                    }.codeFmt(it.name)
-                                }.joinToCode(),
-                            bitFieldIndices.map { "%L".codeFmt(DEFAULTS_BITFLAGS_FIELD_NAME + it) }.joinToCode(),
-                        )
+                        if (parameters.any { it.hasDefault && it.defaultValue != null }) {
+                            val requiredVals =
+                                parameters
+                                    .filter { !it.hasDefault }
+                                    .map { param ->
+                                        val assertion = if (param.typeName.isNullable) "" else "!!"
+                                        "val ${param.name} = this.${param.name}$assertion".codeFmt()
+                                    }
+                            val defaultVals =
+                                parameters
+                                    .filter { it.hasDefault }
+                                    .map { param ->
+                                        val defaultValue = param.defaultValue?.let { "%L".codeFmt(it) } ?: "null".codeFmt()
+                                        val fieldName = DEFAULTS_BITFLAGS_FIELD_NAME + (param.index / 32)
+                                        val bitMask = 1 shl (param.index % 32)
+                                        val assertion = if (param.typeName.isNullable) "" else "!!"
+                                        "val ${param.name} = if(($fieldName and $bitMask) == 0) this.${param.name}$assertion else %L"
+                                            .codeFmt(
+                                                defaultValue,
+                                            )
+                                    }
+                            for (vals in requiredVals + defaultVals) {
+                                addStatement("%L", vals)
+                            }
+
+                            addStatement(
+                                "return %T(%L)",
+                                entityClass,
+                                parameters.map { "%L".codeFmt(it.name) }.joinToCode(),
+                            )
+                        } else {
+                            addStatement(
+                                "return %T::class.java.getConstructor(%L, %L, %L).newInstance(%L, %L, null)",
+                                entityClass,
+                                parameters
+                                    .map {
+                                        "%T::class.%L".codeFmt(
+                                            it.typeName.toRawType().nonnull,
+                                            if (it.typeName.isNullable) "javaObjectType" else "java",
+                                        )
+                                    }.joinToCode(),
+                                bitFieldIndices.map { "%T::class.java".codeFmt(INT) }.joinToCode(),
+                                if (kotlinVersion.isAtLeast(1, 5)) {
+                                    "%T::class.java".codeFmt(DefaultConstructorMarker::class.asClassName())
+                                } else {
+                                    "Class.forName(%S)".codeFmt(DefaultConstructorMarker::class.java.name)
+                                },
+                                parameters
+                                    .map {
+                                        when {
+                                            it.typeName.isNullable -> "%L"
+                                            it.typeName == BOOLEAN -> "%L ?: false"
+                                            it.typeName == BYTE -> "%L ?: 0"
+                                            it.typeName == SHORT -> "%L ?: 0"
+                                            it.typeName == INT -> "%L ?: 0"
+                                            it.typeName == LONG -> "%L ?: 0"
+                                            it.typeName == CHAR -> "%L ?: '\\u0000'"
+                                            it.typeName == FLOAT -> "%L ?: 0.0f"
+                                            it.typeName == DOUBLE -> "%L ?: 0.0"
+                                            else -> "%L"
+                                        }.codeFmt(it.name)
+                                    }.joinToCode(),
+                                bitFieldIndices.map { "%L".codeFmt(DEFAULTS_BITFLAGS_FIELD_NAME + it) }.joinToCode(),
+                            )
+                        }
                     } else {
                         addStatement(
                             "return %T(%L)",
