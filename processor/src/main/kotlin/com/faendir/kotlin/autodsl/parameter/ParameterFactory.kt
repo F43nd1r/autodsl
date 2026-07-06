@@ -43,8 +43,15 @@ class ParameterFactory<A, T : A, C : A, P : A>(
                         (parameter.getTypeDeclaration()?.hasAnnotation(AutoDsl::class) == true) to null
                     }
                 }
+            val typeParameters =
+                if (collectionType != null) {
+                    parameter.getTypeArguments().firstOrNull()?.getTypeParameters()
+                } else {
+                    parameter.getTypeDeclaration()?.getTypeParameters()
+                }
             Parameter(
                 typeName = type,
+                typeParameters = typeParameters,
                 name = parameter.getName(),
                 doc = parameter.getDoc(),
                 hasDefault = parameter.hasDefault(),

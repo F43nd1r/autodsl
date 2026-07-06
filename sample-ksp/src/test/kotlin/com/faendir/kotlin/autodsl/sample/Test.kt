@@ -17,15 +17,39 @@ class Test {
                     lng = 100.0
                 }
             }
+            art hobby {
+                name = "Painting"
+                medium = "Oil"
+            }
+            hobby {
+                game {
+                    name = "Chess"
+                    online = true
+                }
+            }
             friend {
                 name = "Arturo"
                 age = 28
                 givenName = "A"
+                sport hobby {
+                    name = "Football"
+                    teamSize = 11
+                }
             }
             friend {
                 name = "Tiwa"
                 age = 30
                 streetName = "Lil T"
+                other hobby {
+                    name = "Programming"
+                    data = 1337
+                }
+                hobby {
+                    other {
+                        name = "Dancing"
+                        data = "I like to dance"
+                    }
+                }
             }
         }
     }
