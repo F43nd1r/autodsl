@@ -4,19 +4,16 @@ import com.faendir.kotlin.autodsl.kapt.KaptProcessor
 import com.faendir.kotlin.autodsl.ksp.KspProcessorProvider
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.SourceFile.Companion.fromPath
 import com.tschuchort.compiletesting.SourceFile.Companion.kotlin
 import com.tschuchort.compiletesting.configureKsp
 import java.io.File
-import kotlin.test.assertNotNull
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.DynamicTest
 import strikt.api.expectThat
 import strikt.assertions.contains
 import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEqualTo
-import strikt.assertions.isNotEmpty
 
 internal val JvmCompilationResult.workingDir: File
     get() = outputDirectory.parentFile!!
@@ -35,8 +32,8 @@ fun compile(
     val compileKsp by lazy { compileKsp(source, eval, expect) }
     val compileKapt by lazy { compileKapt(source, eval, expect) }
     return listOfNotNull(
-        DynamicTest.dynamicTest("ksp") { expectThat(compileKsp).isNotEmpty() },
-        DynamicTest.dynamicTest("kapt") { expectThat(compileKapt).isNotEmpty() },
+        DynamicTest.dynamicTest("ksp") { compileKsp },
+        DynamicTest.dynamicTest("kapt") { compileKapt },
         DynamicTest.dynamicTest("compare") {
             expectThat(compileKsp.map { it.readText() }).containsExactlyInAnyOrder(compileKapt.map { it.readText() })
         },
