@@ -1,6 +1,7 @@
 package com.faendir.kotlin.autodsl.parameter
 
 import com.faendir.kotlin.autodsl.AutoDsl
+import com.faendir.kotlin.autodsl.AutoDslDoc
 import com.faendir.kotlin.autodsl.AutoDslRequired
 import com.faendir.kotlin.autodsl.AutoDslSingular
 import com.faendir.kotlin.autodsl.SourceInfoResolver
@@ -46,7 +47,7 @@ class ParameterFactory<A, T : A, C : A, P : A>(
             Parameter(
                 typeName = type,
                 name = parameter.getName(),
-                doc = parameter.getDoc(),
+                doc = parameter.getAnnotationProperty(AutoDslDoc::class, AutoDslDoc::kDoc) ?: parameter.getDoc(),
                 hasDefault = parameter.hasDefault(),
                 requiredGroup = parameter.getAnnotationProperty(AutoDslRequired::class, AutoDslRequired::group),
                 index = index,
