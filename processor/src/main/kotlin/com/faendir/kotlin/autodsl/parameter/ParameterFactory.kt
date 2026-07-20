@@ -6,6 +6,7 @@ import com.faendir.kotlin.autodsl.AutoDslRequired
 import com.faendir.kotlin.autodsl.AutoDslSingular
 import com.faendir.kotlin.autodsl.SourceInfoResolver
 import com.faendir.kotlin.autodsl.parameter.CollectionType.ListType
+import com.faendir.kotlin.autodsl.parameter.CollectionType.MapType
 import com.faendir.kotlin.autodsl.parameter.CollectionType.SetType
 import com.faendir.kotlin.autodsl.toRawType
 import com.shadow.pluralize.singularize
@@ -18,6 +19,7 @@ class ParameterFactory<A, T : A, C : A, P : A>(
 ) : SourceInfoResolver<A, T, C, P> by resolver {
     private val set = Set::class.asClassName()
     private val list = List::class.asClassName()
+    private val map = Map::class.asClassName()
     private val collection = Collection::class.asClassName()
     private val iterable = Iterable::class.asClassName()
 
@@ -36,8 +38,12 @@ class ParameterFactory<A, T : A, C : A, P : A>(
                     }
 
                     list, collection, iterable -> {
-                        parameter.hasAnnotatedTypeArgument(AutoDsl::class) to
-                            ListType(findSingular(parameter, index))
+                        parameter.hasAnnotatedTypeArgument(AutoDsl::class) to ListType(findSingular(parameter, index))
+                    }
+
+                    map -> {
+                        (parameter.hasAnnotatedTypeArgument(AutoDsl::class) || parameter.hasAnnotatedTypeArgument(AutoDsl::class, 1)) to
+                            MapType(findSingular(parameter, index))
                     }
 
                     else -> {
@@ -56,8 +62,10 @@ class ParameterFactory<A, T : A, C : A, P : A>(
             )
         }
 
-    private fun P.hasAnnotatedTypeArgument(annotation: KClass<out Annotation>): Boolean =
-        getTypeArguments().firstOrNull()?.hasAnnotation(annotation) ?: false
+    private fun P.hasAnnotatedTypeArgument(
+        annotation: KClass<out Annotation>,
+        index: Int = 0,
+    ): Boolean = getTypeArguments().getOrNull(index)?.hasAnnotation(annotation) ?: false
 
     private fun findSingular(
         parameter: P,

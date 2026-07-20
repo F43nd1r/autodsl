@@ -1,5 +1,6 @@
 package com.faendir.kotlin.autodsl
 
+import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName
@@ -21,6 +22,29 @@ fun TypeName.toRawType(): ClassName =
         is LambdaTypeName -> ClassName("kotlin", "Function${(if (receiver != null) 1 else 0) + parameters.size}")
         is TypeVariableName -> Any::class.asClassName()
         else -> throw IllegalArgumentException("Unsupported conversion to raw type from $this")
+    }
+
+fun TypeName.withoutVariance(): TypeName =
+    when (this) {
+        is ParameterizedTypeName -> {
+            val newArgs =
+                typeArguments.map { arg ->
+                    if (arg is WildcardTypeName) {
+                        arg.inTypes.firstOrNull() ?: arg.outTypes.firstOrNull() ?: ANY
+                    } else {
+                        arg
+                    }
+                }
+            this.rawType.parameterizedBy(newArgs)
+        }
+
+        is TypeVariableName -> {
+            TypeVariableName(name, bounds).copy(nullable = this.isNullable, annotations = this.annotations, tags = this.tags)
+        }
+
+        else -> {
+            this
+        }
     }
 
 fun TypeName.withoutAnnotations(): TypeName =
@@ -68,5 +92,10 @@ fun TypeName.withoutAnnotations(): TypeName =
 fun ClassName.withBuilderSuffix() = ClassName(packageName, "${simpleNames.joinToString("")}Builder")
 
 fun TypeName.withBuilderSuffix() = toRawType().withBuilderSuffix()
+
+fun ParameterizedTypeName.withMutablePrefix() =
+    toRawType()
+        .let { ClassName(it.packageName, "Mutable${it.simpleNames.joinToString("")}") }
+        .parameterizedBy(typeArguments)
 
 fun TypeName.asLambdaReceiver() = LambdaTypeName.get(receiver = this, returnType = Unit::class.asClassName())
