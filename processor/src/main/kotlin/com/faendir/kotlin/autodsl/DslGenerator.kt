@@ -29,6 +29,7 @@ import io.github.enjoydambience.kotlinbard.addCode
 import io.github.enjoydambience.kotlinbard.addFunction
 import io.github.enjoydambience.kotlinbard.addInterface
 import io.github.enjoydambience.kotlinbard.addObject
+import io.github.enjoydambience.kotlinbard.addKdoc
 import io.github.enjoydambience.kotlinbard.addProperty
 import io.github.enjoydambience.kotlinbard.buildFile
 import io.github.enjoydambience.kotlinbard.codeFmt
@@ -244,6 +245,9 @@ class DslGenerator<A, T : A, C : A, P : A>(
                 if (markerType != null && markerType != Annotation::class.asClassName()) {
                     addAnnotation(markerType)
                 }
+                addKdoc {
+                    entity.getAnnotationProperty(AutoDslDoc::class, AutoDslDoc::kDoc)?.let { add("%L", it) }
+                }
             }
             addFunction(typePrefix.replaceFirstChar { it.lowercase(Locale.getDefault()) }) {
                 addModifiers(KModifier.INLINE)
@@ -379,8 +383,10 @@ class DslGenerator<A, T : A, C : A, P : A>(
         addParameter(parameter.name, elementType, KModifier.VARARG)
         addStatement("this.%1L·= %1L.%2L()", parameter.name, parameter.collectionType!!.convertFunction)
         addStatement("return this")
-        parameter.doc?.let { addKdoc(it) }
-        addKdoc("@see %T.%L", entityClass, parameter.name)
+        addKdoc {
+            parameter.doc?.let { add("%L\n\n", it) }
+            add("@see %T.%L", entityClass, parameter.name)
+        }
     }
 
     private fun TypeSpecBuilder.addParameterBuilderStyleSetter(
@@ -392,8 +398,10 @@ class DslGenerator<A, T : A, C : A, P : A>(
         addParameter(parameter.name, parameter.typeName)
         addStatement("this.%1L·= %1L", parameter.name)
         addStatement("return this")
-        parameter.doc?.let { addKdoc(it) }
-        addKdoc("@see %T.%L", entityClass, parameter.name)
+        addKdoc {
+            parameter.doc?.let { add("%L\n\n", it) }
+            add("@see %T.%L", entityClass, parameter.name)
+        }
     }
 
     private fun TypeSpecBuilder.addParameterProperty(
@@ -417,8 +425,10 @@ class DslGenerator<A, T : A, C : A, P : A>(
                 addMember("group = %S", parameter.group)
             }
         }
-        parameter.doc?.let { addKdoc(it) }
-        addKdoc("@see %T.%L", entityClass, parameter.name)
+        addKdoc {
+            parameter.doc?.let { add("%L\n\n", it) }
+            add("@see %T.%L", entityClass, parameter.name)
+        }
     }
 
     private fun TypeSpecBuilder.addParameterOperatorAdder(parameter: Parameter) {
