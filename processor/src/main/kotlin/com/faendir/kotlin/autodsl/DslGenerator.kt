@@ -28,8 +28,8 @@ import io.github.enjoydambience.kotlinbard.addClass
 import io.github.enjoydambience.kotlinbard.addCode
 import io.github.enjoydambience.kotlinbard.addFunction
 import io.github.enjoydambience.kotlinbard.addInterface
-import io.github.enjoydambience.kotlinbard.addObject
 import io.github.enjoydambience.kotlinbard.addKdoc
+import io.github.enjoydambience.kotlinbard.addObject
 import io.github.enjoydambience.kotlinbard.addProperty
 import io.github.enjoydambience.kotlinbard.buildFile
 import io.github.enjoydambience.kotlinbard.codeFmt

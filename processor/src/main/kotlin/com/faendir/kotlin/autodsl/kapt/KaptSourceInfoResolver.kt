@@ -187,7 +187,11 @@ class KaptSourceInfoResolver(
         val className = (this as? ClassName) ?: (this as? ParameterizedTypeName)?.rawType ?: return null
         val typeElement = processingEnv.elementUtils.getTypeElement(className.canonicalName) ?: return null
 
-        return Type(typeElement, typeElement.toTypeSpec())
+        return try {
+            Type(typeElement, typeElement.toTypeSpec())
+        } catch (_: Exception) {
+            null
+        }
     }
 
     override fun Parameter.getTypeDeclaration(): Type? = element.asType().toType()
