@@ -8,10 +8,10 @@ import com.tschuchort.compiletesting.SourceFile.Companion.fromPath
 import com.tschuchort.compiletesting.SourceFile.Companion.kotlin
 import com.tschuchort.compiletesting.configureKsp
 import java.io.File
-import kotlin.test.assertNotNull
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.DynamicTest
 import strikt.api.expectThat
+import strikt.assertions.contains
 import strikt.assertions.containsExactlyInAnyOrder
 import strikt.assertions.isEqualTo
 
@@ -26,22 +26,22 @@ private fun File.collectSourceFiles(): List<File> = walkTopDown().filter { it.is
 fun compile(
     @Language("kotlin") source: String,
     @Language("kotlin") eval: String = "fun test() { }",
+    @Language("kotlin") generates: String? = null,
     expect: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
     compare: Boolean = true,
 ): List<DynamicTest> {
     val compileKsp by lazy { compileKsp(source, eval, expect) }
     val compileKapt by lazy { compileKapt(source, eval, expect) }
-    return buildList {
-        add(DynamicTest.dynamicTest("ksp") { assertNotNull(compileKsp) })
-        add(DynamicTest.dynamicTest("kapt") { assertNotNull(compileKapt) })
-        if (compare) {
-            add(
-                DynamicTest.dynamicTest("compare") {
-                    expectThat(compileKsp.map { it.readText() }).containsExactlyInAnyOrder(compileKapt.map { it.readText() })
-                },
-            )
-        }
-    }
+  
+    return listOfNotNull(
+        DynamicTest.dynamicTest("ksp") { compileKsp },
+        DynamicTest.dynamicTest("kapt") { compileKapt },
+        if (compare)
+        DynamicTest.dynamicTest("compare") {
+            expectThat(compileKsp.map { it.readText() }).containsExactlyInAnyOrder(compileKapt.map { it.readText() })
+        } else null,
+        generates?.let { DynamicTest.dynamicTest("generates") { expectThat(compileKsp.map { it.readText() }).contains(generates) } },
+    )
 }
 
 fun compileKsp(

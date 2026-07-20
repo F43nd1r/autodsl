@@ -10,6 +10,8 @@ Inspired by [AutoDsl](https://github.com/juanchosaravia/autodsl), which is no lo
 
 ## Documentation
 
+For a concise feature guide, see [Features](docs/features.md).
+
 Create expressive, immutable and type-safe DSL **without boilerplate code**:
 
 ```kotlin
