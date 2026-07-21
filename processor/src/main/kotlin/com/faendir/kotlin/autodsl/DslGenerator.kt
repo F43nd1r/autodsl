@@ -25,6 +25,7 @@ import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
+import io.github.enjoydambience.kotlinbard.FileSpecBuilder
 import io.github.enjoydambience.kotlinbard.TypeSpecBuilder
 import io.github.enjoydambience.kotlinbard.addAnnotation
 import io.github.enjoydambience.kotlinbard.addClass
@@ -360,6 +361,50 @@ class DslGenerator<A, T : A, C : A, P : A>(
                 addStatement("return %T().apply(initializer).build()", builderType)
                 returns(entityType)
             }
+            addFunction("add") {
+                addModifiers(KModifier.INLINE)
+                for (typeParam in entityTypeParameters) {
+                    addTypeVariable(typeParam)
+                }
+                receiver(Collection::class.asClassName().withMutablePrefix().parameterizedBy(entityType))
+                addParameter("builder", builderType.asLambdaReceiver())
+                addStatement("return this@add.add(%T().apply(builder).build())", builderType)
+                returns(Boolean::class.asClassName())
+            }
+            addFunction("plusAssign") {
+                addModifiers(KModifier.INLINE, KModifier.OPERATOR)
+                for (typeParam in entityTypeParameters) {
+                    addTypeVariable(typeParam)
+                }
+                receiver(Collection::class.asClassName().withMutablePrefix().parameterizedBy(entityType))
+                addParameter("builder", builderType.asLambdaReceiver())
+                addStatement("this@plusAssign += %T().apply(builder).build()", builderType)
+            }
+            addFunction("put") {
+                addModifiers(KModifier.INLINE)
+                val key = TypeVariableName("KEY")
+                addTypeVariable(key)
+                for (typeParam in entityTypeParameters) {
+                    addTypeVariable(typeParam)
+                }
+                receiver(Map::class.asClassName().withMutablePrefix().parameterizedBy(key, entityType))
+                addParameter("key", key)
+                addParameter("builder", builderType.asLambdaReceiver())
+                addStatement("return this@put.put(key, %T().apply(builder).build())", builderType)
+                returns(entityType.nullable)
+            }
+            addFunction("set") {
+                addModifiers(KModifier.INLINE, KModifier.OPERATOR)
+                val key = TypeVariableName("KEY")
+                addTypeVariable(key)
+                for (typeParam in entityTypeParameters) {
+                    addTypeVariable(typeParam)
+                }
+                receiver(Map::class.asClassName().withMutablePrefix().parameterizedBy(key, entityType))
+                addParameter("key", key)
+                addParameter("builder", builderType.asLambdaReceiver())
+                addStatement("this@set.put(key, builder)")
+            }
         }.writeTo(entity, codeGenerator)
         return true
     }
@@ -661,17 +706,6 @@ class DslGenerator<A, T : A, C : A, P : A>(
                         }
                     }
                 }
-                addFunction("put") {
-                    receiver(safeType.withMutablePrefix())
-                    addAnnotation(JvmName::class) {
-                        addMember("%S", "putMutableBuilder${parameter.collectionType.singular.replaceFirstChar { it.uppercase() }}")
-                    }
-                    addParameter("key", keyType)
-                    addParameter("block", blockType)
-                    addCode {
-                        addStatement("this@put[key] = %T().apply(block).build()", valueType.withBuilderSuffix())
-                    }
-                }
             } else {
                 addFunction("set") {
                     receiver(safeType.nullable)
@@ -735,18 +769,6 @@ class DslGenerator<A, T : A, C : A, P : A>(
                             addStatement("addAll(this@plus)")
                         }
                         addStatement("addAll(value)")
-                    }
-                }
-            }
-            if (parameter.hasNestedDsl) {
-                addFunction("add") {
-                    receiver(safeType.withMutablePrefix())
-                    addAnnotation(JvmName::class) {
-                        addMember("%S", "addMutableBuilder${parameter.collectionType!!.singular.replaceFirstChar { it.uppercase() }}")
-                    }
-                    addParameter("block", elementType.withBuilderSuffix().asLambdaReceiver())
-                    addCode {
-                        addStatement("this@add.add(%T().apply(block).build())", elementType.withBuilderSuffix())
                     }
                 }
             }

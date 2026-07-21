@@ -91,11 +91,20 @@ fun TypeName.withoutAnnotations(): TypeName =
 
 fun ClassName.withBuilderSuffix() = ClassName(packageName, "${simpleNames.joinToString("")}Builder")
 
-fun TypeName.withBuilderSuffix() = toRawType().withBuilderSuffix()
+fun TypeName.withBuilderSuffix(): TypeName =
+    when (this) {
+        is ParameterizedTypeName -> rawType.withBuilderSuffix().parameterizedBy(typeArguments)
+        is ClassName -> withBuilderSuffix()
+        else -> toRawType().withBuilderSuffix() // Fallback for other TypeName types, though unlikely to be reached for main classes
+    }
 
-fun ParameterizedTypeName.withMutablePrefix() =
-    toRawType()
-        .let { ClassName(it.packageName, "Mutable${it.simpleNames.joinToString("")}") }
-        .parameterizedBy(typeArguments)
+fun ClassName.withMutablePrefix() = ClassName(packageName, "Mutable${simpleNames.joinToString("")}")
+
+fun TypeName.withMutablePrefix(): TypeName =
+    when (this) {
+        is ParameterizedTypeName -> rawType.withMutablePrefix().parameterizedBy(typeArguments)
+        is ClassName -> withMutablePrefix()
+        else -> toRawType().withMutablePrefix() // Fallback for other TypeName types, though unlikely to be reached for main classes
+    }
 
 fun TypeName.asLambdaReceiver() = LambdaTypeName.get(receiver = this, returnType = Unit::class.asClassName())

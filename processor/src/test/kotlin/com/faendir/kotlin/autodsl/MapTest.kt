@@ -44,7 +44,7 @@ class MapTest {
                 import strikt.assertions.hasEntry
 				fun test() {
 					expectThat(entity {
-						a["a"] {
+						a["a"] = {
 							b = "a"
 						}
 					}) {
