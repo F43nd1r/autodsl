@@ -1,6 +1,7 @@
 package com.faendir.kotlin.autodsl.ksp
 
 import com.faendir.kotlin.autodsl.AnnotationFinder
+import com.faendir.kotlin.autodsl.PsiElementFactory
 import com.faendir.kotlin.autodsl.SourceInfoResolver
 import com.google.devtools.ksp.KSTypeNotPresentException
 import com.google.devtools.ksp.KspExperimental
@@ -17,8 +18,6 @@ import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Modifier
 import com.google.devtools.ksp.validate
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
@@ -26,27 +25,16 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
-import com.squareup.kotlinpoet.metadata.classinspectors.ElementsClassInspector
-import com.squareup.kotlinpoet.metadata.classinspectors.ReflectiveClassInspector
-import com.squareup.kotlinpoet.metadata.specs.classFor
-import com.squareup.kotlinpoet.metadata.specs.toFileSpec
 import java.io.File
-import kotlin.metadata.KmPackage
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
-import org.jetbrains.kotlin.K1Deprecation
-import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
-import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
-import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtPsiFactory
 import com.google.devtools.ksp.getConstructors as superGetConstructors
 
 @OptIn(KspExperimental::class)
 class KspSourceInfoResolver(
     private val resolver: Resolver,
+    private val psiElementFactory: PsiElementFactory,
 ) : AnnotationFinder<KSAnnotated>(),
     SourceInfoResolver<KSAnnotated, KSClassDeclaration, KSFunctionDeclaration, KSValueParameter> {
     private fun getClassesWithAnnotation(annotation: String): List<KSClassDeclaration> =
@@ -109,18 +97,6 @@ class KspSourceInfoResolver(
         return typeParameters.map { it.toTypeVariableName(resolver) }
     }
 
-    @OptIn(CompilerConfiguration.Internals::class, K1Deprecation::class)
-    private val psiFactory by lazy {
-        val disposable = Disposer.newDisposable()
-        val env =
-            KotlinCoreEnvironment.createForProduction(
-                disposable,
-                CompilerConfiguration(),
-                EnvironmentConfigFiles.METADATA_CONFIG_FILES,
-            )
-        KtPsiFactory(env.project)
-    }
-
     private fun KSFile.toFileText(): String? =
         try {
             // Read directly from disk using the file path
@@ -132,7 +108,7 @@ class KspSourceInfoResolver(
     override fun KSClassDeclaration.clonePrivateTopLevels(): SourceInfoResolver.ClonedPrivateTopLevels {
         val file = containingFile ?: return SourceInfoResolver.ClonedPrivateTopLevels(null)
         val fileText = file.toFileText() ?: return SourceInfoResolver.ClonedPrivateTopLevels(null)
-        val ktFile = psiFactory.createFile(file.fileName, fileText)
+        val ktFile = psiElementFactory.ktPsiFactory.createFile(file.fileName, fileText)
 
         val privateDecls =
             ktFile.declarations.filter {

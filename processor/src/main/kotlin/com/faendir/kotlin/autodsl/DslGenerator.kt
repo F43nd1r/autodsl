@@ -45,8 +45,9 @@ class DslGenerator<A, T : A, C : A, P : A>(
     private val logger: Logger<T>,
     private val codeGenerator: CodeWriter<T>,
     resolver: SourceInfoResolver<A, T, C, P>,
+    psiElementFactory: PsiElementFactory,
 ) : SourceInfoResolver<A, T, C, P> by resolver {
-    private val parameterFactory = ParameterFactory(resolver)
+    private val parameterFactory = ParameterFactory(resolver, psiElementFactory)
 
     private fun error(
         reason: String,

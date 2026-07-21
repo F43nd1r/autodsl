@@ -4,8 +4,8 @@ import com.faendir.kotlin.autodsl.AutoDsl
 import com.faendir.kotlin.autodsl.AutoDslDoc
 import com.faendir.kotlin.autodsl.AutoDslRequired
 import com.faendir.kotlin.autodsl.AutoDslSingular
+import com.faendir.kotlin.autodsl.PsiElementFactory
 import com.faendir.kotlin.autodsl.SourceInfoResolver
-import com.faendir.kotlin.autodsl.kapt.asFqName
 import com.faendir.kotlin.autodsl.parameter.CollectionType.ListType
 import com.faendir.kotlin.autodsl.parameter.CollectionType.SetType
 import com.faendir.kotlin.autodsl.toRawType
@@ -18,46 +18,26 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.ksp.toTypeName
-import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import java.io.File
 import kotlin.reflect.KClass
-import org.jetbrains.kotlin.K1Deprecation
-import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
-import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
-import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
 import org.jetbrains.kotlin.com.intellij.openapi.util.TextRange
-import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtImportDirective
-import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
 import org.jetbrains.kotlin.psi.allConstructors
-import org.jetbrains.kotlin.utils.filterIsInstanceAnd
 
 class ParameterFactory<A, T : A, C : A, P : A>(
-    resolver: SourceInfoResolver<A, T, C, P>,
+    private val resolver: SourceInfoResolver<A, T, C, P>,
+    private val psiElementFactory: PsiElementFactory,
 ) : SourceInfoResolver<A, T, C, P> by resolver {
     private val set = Set::class.asClassName()
     private val list = List::class.asClassName()
     private val collection = Collection::class.asClassName()
     private val iterable = Iterable::class.asClassName()
-
-    @OptIn(CompilerConfiguration.Internals::class, K1Deprecation::class)
-    private val psiFactory by lazy {
-        val disposable = Disposer.newDisposable()
-        val env =
-            KotlinCoreEnvironment.createForProduction(
-                disposable,
-                CompilerConfiguration(),
-                EnvironmentConfigFiles.METADATA_CONFIG_FILES,
-            )
-        KtPsiFactory(env.project)
-    }
 
     @JvmName("getParametersFromConstructor")
     fun getParameters(
@@ -69,8 +49,7 @@ class ParameterFactory<A, T : A, C : A, P : A>(
             val type = parameter.getTypeName(enclosingType)
             val rawType = type.toRawType()
             val (hasNestedDsl, collectionType) =
-                when (rawType)
-                {
+                when (rawType) {
                     set -> {
                         parameter.hasAnnotatedTypeArgument(AutoDsl::class) to SetType(findSingular(parameter, index))
                     }
@@ -156,7 +135,7 @@ class ParameterFactory<A, T : A, C : A, P : A>(
         try {
             if (enclosingType is KSClassDeclaration) {
                 val fileLocation = enclosingType.location as? FileLocation ?: return emptyMap()
-                val ktFile = psiFactory.createFile(File(fileLocation.filePath).readText())
+                val ktFile = psiElementFactory.ktPsiFactory.createFile(File(fileLocation.filePath).readText())
 
                 val targetName = enclosingType.simpleName.asString()
                 val ktClass = ktFile.findClassByName(targetName) ?: return emptyMap()

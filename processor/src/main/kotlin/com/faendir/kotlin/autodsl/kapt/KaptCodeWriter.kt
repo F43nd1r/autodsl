@@ -24,10 +24,17 @@ class KaptCodeWriter(
         fileSpec: FileSpec,
         extra: String,
     ) {
-        val file = fileSpec.writeTo(dir)
-        if (extra.isNotEmpty()) {
-            file.appendText("\n")
-            file.appendText(extra)
+        val packageName = fileSpec.packageName
+        val fileName = fileSpec.name
+        val packageDir = File(dir, packageName.replace('.', File.separatorChar))
+        packageDir.mkdirs()
+        val file = File(packageDir, "$fileName.kt")
+        file.writer().use {
+            fileSpec.writeTo(it)
+            if (extra.isNotEmpty()) {
+                it.write("\n")
+                it.write(extra)
+            }
         }
     }
 }
