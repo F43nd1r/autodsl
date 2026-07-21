@@ -12,7 +12,12 @@ class KspCodeWriter(
     override fun emit(
         source: KSClassDeclaration,
         fileSpec: FileSpec,
+        extra: String,
     ) = codeGenerator.createNewFile(Dependencies(false, source.containingFile!!), fileSpec.packageName, fileSpec.name).writer().use {
         fileSpec.writeTo(it)
+        if (extra.isNotEmpty()) {
+            it.appendLine()
+            it.write(extra)
+        }
     }
 }

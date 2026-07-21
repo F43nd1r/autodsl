@@ -6,10 +6,12 @@ interface CodeWriter<S> {
     fun emit(
         source: S,
         fileSpec: FileSpec,
+        extra: String = "",
     )
 }
 
 fun <S> FileSpec.writeTo(
     source: S,
     codeWriter: CodeWriter<S>,
-) = codeWriter.emit(source, this)
+    extra: String = "",
+) = codeWriter.emit(source, this, extra)

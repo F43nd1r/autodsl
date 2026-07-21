@@ -1,5 +1,6 @@
 package com.faendir.kotlin.autodsl.parameter
 
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.TypeName
 
 class Parameter(
@@ -7,6 +8,7 @@ class Parameter(
     val name: String,
     val doc: String?,
     val hasDefault: Boolean,
+    val defaultValue: CodeBlock?,
     requiredGroup: String?,
     val index: Int,
     val hasNestedDsl: Boolean,
