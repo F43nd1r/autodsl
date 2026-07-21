@@ -19,6 +19,7 @@ import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
 import com.squareup.kotlinpoet.metadata.classinspectors.ElementsClassInspector
+import com.squareup.kotlinpoet.metadata.specs.classFor
 import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment
@@ -96,6 +97,17 @@ class KaptSourceInfoResolver(
 
     override fun Type.isAbstract(): Boolean = typeSpec.modifiers.contains(KModifier.ABSTRACT)
 
+    override fun Type.isSealed(): Boolean = typeSpec.modifiers.contains(KModifier.SEALED)
+
+    override fun Type.getSealedSubclasses(): List<Type> {
+        val kmClass = classInspector.classFor(asClassName())
+        return kmClass.sealedSubclasses.mapNotNull { internalName ->
+            val binaryName = internalName.replace('/', '.')
+            val typeElement = processingEnv.elementUtils.getTypeElement(binaryName)
+            typeElement?.toTypeSpec()?.let { Type(typeElement, it) }
+        }
+    }
+
     override fun Type.getConstructors(): List<Constructor> {
         val constructorElements =
             element.enclosedElements
@@ -171,9 +183,28 @@ class KaptSourceInfoResolver(
             }
         }
 
+    private fun TypeName.toType(): Type? {
+        val className = (this as? ClassName) ?: (this as? ParameterizedTypeName)?.rawType ?: return null
+        val typeElement = processingEnv.elementUtils.getTypeElement(className.canonicalName) ?: return null
+
+        return try {
+            Type(typeElement, typeElement.toTypeSpec())
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     override fun Parameter.getTypeDeclaration(): Type? = element.asType().toType()
 
-    override fun Parameter.getTypeArguments(): List<Type> = (element.asType() as DeclaredType).typeArguments.mapNotNull { it.toType() }
+    override fun Parameter.getTypeArguments(): List<Type> {
+        val type = parameterSpec.type
+
+        val parameterizedType = type as? ParameterizedTypeName ?: return emptyList()
+
+        return parameterizedType.typeArguments.mapNotNull { typeName ->
+            typeName.toType()
+        }
+    }
 
     override fun Parameter.getTypeName(enclosingType: Type): TypeName = parameterSpec.type
 
