@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtImportDirective
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.KtSimpleNameExpression
@@ -151,26 +152,45 @@ class ParameterFactory<A, T : A, C : A, P : A>(
         return builder.build()
     }
 
-    private fun extractDefaultsAsCodeBlocks(
-        enclosingType: T,
-    ): Map<String, CodeBlock> =
-        if (enclosingType is KSClassDeclaration) {
-            val fileLocation = enclosingType.location as FileLocation
-            val ktFile = psiFactory.createFile(File(fileLocation.filePath).readText())
+    private fun extractDefaultsAsCodeBlocks(enclosingType: T): Map<String, CodeBlock> =
+        try {
+            if (enclosingType is KSClassDeclaration) {
+                val fileLocation = enclosingType.location as? FileLocation ?: return emptyMap()
+                val ktFile = psiFactory.createFile(File(fileLocation.filePath).readText())
 
-            val ktClass = ktFile.declarations.filterIsInstance<KtClass>().first { it.name == enclosingType.simpleName.asString() }
-            val imports = ktFile.importDirectives
-            val matchingConstructor =
-                ktClass.allConstructors.firstOrNull { c ->
-                    c.annotationEntries.any { it.shortName?.asString() == "AutoDslConstructor"}
-                } ?: ktClass.primaryConstructor ?: ktClass.allConstructors.first()
+                val targetName = enclosingType.simpleName.asString()
+                val ktClass = ktFile.findClassByName(targetName) ?: return emptyMap()
 
-            matchingConstructor.valueParameters
-                .mapNotNull { param -> param.defaultValue?.let { param.name!! to it } }
-                .associate { (name, defaultValue) -> name to buildDefaultValueCodeBlock(defaultValue, imports) }
-        } else {
+                val imports = ktFile.importDirectives
+                val matchingConstructor =
+                    ktClass.allConstructors.firstOrNull { c ->
+                        c.annotationEntries.any { it.shortName?.asString() == "AutoDslConstructor" }
+                    } ?: ktClass.primaryConstructor ?: ktClass.allConstructors.firstOrNull()
+
+                matchingConstructor
+                    ?.valueParameters
+                    ?.mapNotNull { param -> param.defaultValue?.let { param.name!! to it } }
+                    ?.associate { (name, defaultValue) -> name to buildDefaultValueCodeBlock(defaultValue, imports) }
+                    ?: emptyMap()
+            } else {
+                emptyMap()
+            }
+        } catch (_: Exception) {
             emptyMap()
         }
+
+    private fun KtFile.findClassByName(targetName: String): KtClass? {
+        fun search(declarations: List<org.jetbrains.kotlin.psi.KtDeclaration>): KtClass? {
+            for (decl in declarations) {
+                if (decl is KtClass) {
+                    if (decl.name == targetName) return decl
+                    search(decl.declarations)?.let { return it }
+                }
+            }
+            return null
+        }
+        return search(this.declarations)
+    }
 
     private fun P.hasAnnotatedTypeArgument(annotation: KClass<out Annotation>): Boolean =
         getTypeArguments().firstOrNull()?.hasAnnotation(annotation) ?: false

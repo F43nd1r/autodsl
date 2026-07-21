@@ -11,11 +11,14 @@ import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFile
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Modifier
 import com.google.devtools.ksp.validate
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
@@ -23,8 +26,22 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
+import com.squareup.kotlinpoet.metadata.classinspectors.ElementsClassInspector
+import com.squareup.kotlinpoet.metadata.classinspectors.ReflectiveClassInspector
+import com.squareup.kotlinpoet.metadata.specs.classFor
+import com.squareup.kotlinpoet.metadata.specs.toFileSpec
+import java.io.File
+import kotlin.metadata.KmPackage
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
+import org.jetbrains.kotlin.K1Deprecation
+import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
+import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
+import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
+import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtPsiFactory
 import com.google.devtools.ksp.getConstructors as superGetConstructors
 
 @OptIn(KspExperimental::class)
@@ -73,6 +90,8 @@ class KspSourceInfoResolver(
 
     override fun KSClassDeclaration.isAbstract(): Boolean = modifiers.contains(Modifier.ABSTRACT)
 
+    override fun KSClassDeclaration.isInner(): Boolean = modifiers.contains(Modifier.INNER)
+
     override fun KSClassDeclaration.getConstructors(): List<KSFunctionDeclaration> = superGetConstructors().toList()
 
     override fun KSFunctionDeclaration.isAccessible(): Boolean = isPublic() || isInternal()
@@ -88,6 +107,43 @@ class KspSourceInfoResolver(
     override fun KSClassDeclaration.getTypeParameters(): List<TypeVariableName> {
         val resolver = typeParameters.toTypeParameterResolver()
         return typeParameters.map { it.toTypeVariableName(resolver) }
+    }
+
+    @OptIn(CompilerConfiguration.Internals::class, K1Deprecation::class)
+    private val psiFactory by lazy {
+        val disposable = Disposer.newDisposable()
+        val env =
+            KotlinCoreEnvironment.createForProduction(
+                disposable,
+                CompilerConfiguration(),
+                EnvironmentConfigFiles.METADATA_CONFIG_FILES,
+            )
+        KtPsiFactory(env.project)
+    }
+
+    private fun KSFile.toFileText(): String? =
+        try {
+            // Read directly from disk using the file path
+            File(filePath).readText()
+        } catch (e: Exception) {
+            null
+        }
+
+    override fun KSClassDeclaration.clonePrivateTopLevels(): SourceInfoResolver.ClonedPrivateTopLevels {
+        val file = containingFile ?: return SourceInfoResolver.ClonedPrivateTopLevels(null)
+        val fileText = file.toFileText() ?: return SourceInfoResolver.ClonedPrivateTopLevels(null)
+        val ktFile = psiFactory.createFile(file.fileName, fileText)
+
+        val privateDecls =
+            ktFile.declarations.filter {
+                it.hasModifier(KtTokens.PRIVATE_KEYWORD)
+            }
+
+        if (privateDecls.isEmpty()) return SourceInfoResolver.ClonedPrivateTopLevels(ktFile)
+
+        val rawCode = privateDecls.joinToString("\n\n") { it.text }
+
+        return SourceInfoResolver.ClonedPrivateTopLevels(ktFile, rawCode)
     }
 
     override fun KSValueParameter.getTypeDeclaration(): KSClassDeclaration? = type.resolve().declaration as? KSClassDeclaration

@@ -32,14 +32,17 @@ fun compile(
 ): List<DynamicTest> {
     val compileKsp by lazy { compileKsp(source, eval, expect) }
     val compileKapt by lazy { compileKapt(source, eval, expect) }
-  
+
     return listOfNotNull(
         DynamicTest.dynamicTest("ksp") { compileKsp },
         DynamicTest.dynamicTest("kapt") { compileKapt },
-        if (compare)
-        DynamicTest.dynamicTest("compare") {
-            expectThat(compileKsp.map { it.readText() }).containsExactlyInAnyOrder(compileKapt.map { it.readText() })
-        } else null,
+        if (compare) {
+            DynamicTest.dynamicTest("compare") {
+                expectThat(compileKsp.map { it.readText() }).containsExactlyInAnyOrder(compileKapt.map { it.readText() })
+            }
+        } else {
+            null
+        },
         generates?.let { DynamicTest.dynamicTest("generates") { expectThat(compileKsp.map { it.readText() }).contains(generates) } },
     )
 }

@@ -1,13 +1,16 @@
 package com.faendir.kotlin.autodsl
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
+import org.jetbrains.kotlin.psi.KtFile
 
 @Suppress("UNCHECKED_CAST")
 val <T : TypeName> T.nonnull: T
@@ -70,3 +73,54 @@ fun ClassName.withBuilderSuffix() = ClassName(packageName, "${simpleNames.joinTo
 fun TypeName.withBuilderSuffix() = toRawType().withBuilderSuffix()
 
 fun TypeName.asLambdaReceiver() = LambdaTypeName.get(receiver = this, returnType = Unit::class.asClassName())
+
+fun FileSpec.Builder.addImportsFrom(cloned: SourceInfoResolver.ClonedPrivateTopLevels): FileSpec.Builder {
+    val bodyOnlyText =
+        build()
+            .toString()
+            .lines()
+            .filterNot { line ->
+                val trimmed = line.trim()
+                trimmed.startsWith("import ") || trimmed.startsWith("package ")
+            }.joinToString("\n") + "\n${cloned.rawCode}"
+
+    cloned.file
+        ?.importDirectives
+        ?.filter { directive ->
+            if (directive.isAllUnder) return@filter true
+
+            val nameToCheck =
+                directive.aliasName ?: directive.importedFqName?.shortName()?.asString()
+                    ?: return@filter false
+
+            val regex = Regex("""\b${Regex.escape(nameToCheck)}\b""")
+            regex.containsMatchIn(bodyOnlyText)
+        }?.forEach { directive ->
+            val fqName = directive.importedFqName ?: return@forEach
+            val fqString = fqName.asString()
+            val alias = directive.aliasName
+
+            when {
+                directive.isAllUnder -> {
+                    addDefaultPackageImport(fqString)
+                }
+
+                alias != null -> {
+                    val className = ClassName.bestGuess(fqString)
+                    addAliasedImport(className, alias)
+                }
+
+                else -> {
+                    val packageName = fqName.parent().asString()
+                    val shortName = fqName.shortName().asString()
+
+                    if (shortName.first().isUpperCase()) {
+                        addImport(packageName, shortName)
+                    } else {
+                        addImport(MemberName(packageName, shortName))
+                    }
+                }
+            }
+        }
+    return this
+}

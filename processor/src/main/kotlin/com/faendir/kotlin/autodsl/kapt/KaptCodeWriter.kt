@@ -22,7 +22,12 @@ class KaptCodeWriter(
     override fun emit(
         source: Type,
         fileSpec: FileSpec,
+        extra: String,
     ) {
-        fileSpec.writeTo(dir)
+        val file = fileSpec.writeTo(dir)
+        if (extra.isNotEmpty()) {
+            file.appendText("\n")
+            file.appendText(extra)
+        }
     }
 }

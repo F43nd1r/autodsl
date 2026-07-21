@@ -375,4 +375,42 @@ class DefaultValuesTest {
             """,
             compare = false,
         )
+
+    @TestFactory
+    fun `default value with private property`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                private val default = "Hi"
+                @AutoDsl
+                class Entity(val a: String = default)
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(entity {}.a).isEqualTo("Hi")
+                }
+            """,
+            compare = false,
+        )
+
+    @TestFactory
+    fun `default value with private function`() =
+        compile(
+            """
+                import com.faendir.kotlin.autodsl.AutoDsl
+                private fun default() = "Hi"
+                @AutoDsl
+                class Entity(val a: String = default())
+            """,
+            """
+                import strikt.api.expectThat
+                import strikt.assertions.isEqualTo
+                fun test() {
+                    expectThat(entity {}.a).isEqualTo("Hi")
+                }
+            """,
+            compare = false,
+        )
 }

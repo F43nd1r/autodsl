@@ -10,13 +10,17 @@ import com.squareup.kotlinpoet.CHAR
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.DOUBLE
 import com.squareup.kotlinpoet.FLOAT
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LONG
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.SHORT
+import com.squareup.kotlinpoet.TypeAliasSpec
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
@@ -103,6 +107,10 @@ class DslGenerator<A, T : A, C : A, P : A>(
             error("must not be abstract", entity)
             return false
         }
+        if (entity.isInner()) {
+            error("must not be inner", entity)
+            return false
+        }
         val constructors = entity.getConstructors().filter { it.isAccessible() }
         if (constructors.isEmpty()) {
             error("must have at least one public or internal constructor", entity)
@@ -117,6 +125,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
             return false
         }
         val parameters = parameterFactory.getParameters(constructor, entity)
+        val cloned = entity.clonePrivateTopLevels()
         val entityClass = entity.asClassName()
         val builderClass = entityClass.withBuilderSuffix()
         val entityTypeParameters = entity.getTypeParameters()
@@ -249,7 +258,8 @@ class DslGenerator<A, T : A, C : A, P : A>(
                 addStatement("return %T().apply(initializer).build()", builderType)
                 returns(entityType)
             }
-        }.writeTo(entity, codeGenerator)
+            cloned.file?.let { addImportsFrom(cloned) }
+        }.writeTo(entity, codeGenerator, cloned.rawCode)
         return true
     }
 
