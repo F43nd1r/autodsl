@@ -21,11 +21,11 @@ jobs:
         with:
           ref: ${{ github.ref }}
       - name: Run tests
-        uses: burrunan/gradle-cache-action@v3.0.2
+        uses: burrunan/gradle-cache-action@v3.0.3
         with:
             arguments: check --no-daemon
       - name: Publish
-        uses: burrunan/gradle-cache-action@v3.0.2
+        uses: burrunan/gradle-cache-action@v3.0.3
         with:
           arguments: publish --no-daemon
         env:
