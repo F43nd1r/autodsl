@@ -26,13 +26,37 @@ person {
             lng = 100.0
         }
     }
+	art hobby {
+		name = "Painting"
+		medium = "Oil"
+	}
+	hobby {
+		game {
+			name = "Chess"
+			online = true
+		}
+	}
     friend {
         name = "Arturo"
         age = 28
+	    sport hobby {
+		    name = "Football"
+		    teamSize = 11
+	    }
     }
     friend {
         name = "Tiwa"
         age = 30
+	    other hobby {
+		    name = "Programming"
+		    data = 1337
+	    }
+	    hobby {
+		    other {
+			    name = "Dancing"
+			    data = "I like to dance"
+		    }
+	    }
     }
 }
 ```
@@ -45,6 +69,7 @@ class Person(
     val name: String,
     val age: Int,
     val address: Address?,
+    val hobbies: List<Hobby> = emptyList(),
     val friends: List<Person> = emptyList(),
     //in some cases you'll need to provide a valid singular form manually
     @AutoDslSingular("clazz")
@@ -58,6 +83,36 @@ data class Address(
     val zipCode: Int,
     val location: Location?
 )
+
+@AutoDsl(dslMarker = MyDsl::class)
+sealed interface Hobby {
+	val name: String
+
+	data class Sport(
+		override val name: String,
+		val teamSize: Int,
+	) : Hobby
+
+	data class Game(
+		override val name: String,
+		val online: Boolean,
+	) : Hobby
+
+	data class Art(
+		override val name: String,
+		val medium: String,
+	) : Hobby
+
+	data class Music(
+		override val name: String,
+		val instrument: String,
+	) : Hobby
+
+	data class Other<T>(
+		override val name: String,
+		val data: T,
+	) : Hobby
+}
 
 @AutoDsl
 class Location {
