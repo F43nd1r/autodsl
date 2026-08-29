@@ -2,10 +2,16 @@ package com.faendir.kotlin.autodsl
 
 import com.google.devtools.ksp.symbol.ClassKind
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
+import org.jetbrains.kotlin.psi.KtFile
 
 interface SourceInfoResolver<ANNOTATED, TYPE : ANNOTATED, CONSTRUCTOR : ANNOTATED, PARAMETER : ANNOTATED> {
     fun getClassesWithAnnotation(annotation: KClass<out Annotation>): List<TYPE>
@@ -28,6 +34,8 @@ interface SourceInfoResolver<ANNOTATED, TYPE : ANNOTATED, CONSTRUCTOR : ANNOTATE
 
     fun TYPE.isAbstract(): Boolean
 
+    fun TYPE.isInner(): Boolean
+
     fun TYPE.getConstructors(): List<CONSTRUCTOR>
 
     fun CONSTRUCTOR.isAccessible(): Boolean
@@ -41,6 +49,13 @@ interface SourceInfoResolver<ANNOTATED, TYPE : ANNOTATED, CONSTRUCTOR : ANNOTATE
     fun TYPE.asClassName(): ClassName
 
     fun TYPE.getTypeParameters(): List<TypeVariableName>
+
+    data class ClonedPrivateTopLevels(
+        val file: KtFile?,
+        val rawCode: String = "",
+    )
+
+    fun TYPE.clonePrivateTopLevels(): ClonedPrivateTopLevels
 
     fun PARAMETER.getTypeDeclaration(): TYPE?
 
