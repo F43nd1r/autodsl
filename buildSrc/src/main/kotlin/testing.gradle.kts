@@ -1,16 +1,17 @@
+import org.gradle.accessors.dm.LibrariesForLibs
+
 plugins {
     jacoco
     id("kotlin")
 }
+val libs = the<LibrariesForLibs>()
 
-if(canUseLibs()) {
-    dependencies {
-        testImplementation(kotlin("test-junit5"))
-        testImplementation(libs.junit)
-        testImplementation(libs.kotlin.compileTesting)
-        testImplementation(libs.strikt)
-        testImplementation(kotlin("scripting-compiler-embeddable"))
-    }
+dependencies {
+    testImplementation(kotlin("test-junit5"))
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlin.compileTesting)
+    testImplementation(libs.strikt)
+    testImplementation(kotlin("scripting-compiler-embeddable"))
 }
 
 tasks.withType<Test> {
