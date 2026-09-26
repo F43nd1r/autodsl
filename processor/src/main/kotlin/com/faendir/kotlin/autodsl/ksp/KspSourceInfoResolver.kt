@@ -73,6 +73,10 @@ class KspSourceInfoResolver(
 
     override fun KSClassDeclaration.isAbstract(): Boolean = modifiers.contains(Modifier.ABSTRACT)
 
+    override fun KSClassDeclaration.isSealed(): Boolean = modifiers.contains(Modifier.SEALED)
+
+    override fun KSClassDeclaration.getSealedSubclasses(): List<KSClassDeclaration> = getSealedSubclasses().toList()
+
     override fun KSClassDeclaration.getConstructors(): List<KSFunctionDeclaration> = superGetConstructors().toList()
 
     override fun KSFunctionDeclaration.isAccessible(): Boolean = isPublic() || isInternal()
