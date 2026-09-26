@@ -7,7 +7,9 @@ import com.faendir.kotlin.autodsl.toRawType
 import com.faendir.kotlin.autodsl.withoutAnnotations
 import com.google.devtools.ksp.symbol.ClassKind
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.DelicateKotlinPoetApi
+import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
@@ -33,6 +35,7 @@ import javax.lang.model.type.MirroredTypeException
 import javax.lang.model.type.TypeMirror
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
+import org.jetbrains.kotlin.psi.KtFile
 
 @OptIn(DelicateKotlinPoetApi::class)
 class KaptSourceInfoResolver(
@@ -95,6 +98,8 @@ class KaptSourceInfoResolver(
     override fun Annotated.getQualifiedName(): String? = (this as? Type)?.element?.qualifiedName?.toString()
 
     override fun Type.isAbstract(): Boolean = typeSpec.modifiers.contains(KModifier.ABSTRACT)
+
+    override fun Type.isInner(): Boolean = typeSpec.modifiers.contains(KModifier.INNER)
 
     override fun Type.getConstructors(): List<Constructor> {
         val constructorElements =
@@ -161,6 +166,8 @@ class KaptSourceInfoResolver(
     override fun Type.asClassName(): ClassName = element.asClassName()
 
     override fun Type.getTypeParameters(): List<TypeVariableName> = typeSpec.typeVariables
+
+    override fun Type.clonePrivateTopLevels(): SourceInfoResolver.ClonedPrivateTopLevels = SourceInfoResolver.ClonedPrivateTopLevels(null)
 
     private fun TypeMirror.toType(): Type? =
         (processingEnv.typeUtils.asElement(this) as? TypeElement)?.let { element ->
