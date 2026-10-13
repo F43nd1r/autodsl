@@ -18,8 +18,11 @@ class DocTest {
                 """
                 import com.faendir.kotlin.autodsl.DslInspect
                 import com.faendir.kotlin.autodsl.DslMandatory
+                import kotlin.Boolean
                 import kotlin.String
                 import kotlin.Unit
+                import kotlin.collections.MutableCollection
+                import kotlin.collections.MutableMap
 
                 /**
                  * Entity comment
@@ -27,7 +30,7 @@ class DocTest {
                 @DslInspect
                 public class EntityBuilder {
                   /**
-                   * Parameter comment
+                   * Parameter commentParameter comment
                    *
                    * @see Entity.a
                    */
@@ -51,6 +54,18 @@ class DocTest {
                 }
 
                 public inline fun entity(initializer: EntityBuilder.() -> Unit): Entity = EntityBuilder().apply(initializer).build()
+
+                public inline fun MutableCollection<Entity>.add(builder: EntityBuilder.() -> Unit): Boolean = this@add.add(EntityBuilder().apply(builder).build())
+
+                public inline operator fun MutableCollection<Entity>.plusAssign(builder: EntityBuilder.() -> Unit) {
+                  this@plusAssign += EntityBuilder().apply(builder).build()
+                }
+
+                public inline fun <KEY> MutableMap<KEY, Entity>.put(key: KEY, builder: EntityBuilder.() -> Unit): Entity? = this@put.put(key, EntityBuilder().apply(builder).build())
+
+                public inline operator fun <KEY> MutableMap<KEY, Entity>.`set`(key: KEY, builder: EntityBuilder.() -> Unit) {
+                  this@set.put(key, builder)
+                }
 
                 """.trimIndent(),
         )
@@ -70,8 +85,11 @@ class DocTest {
                 """
                 import com.faendir.kotlin.autodsl.DslInspect
                 import com.faendir.kotlin.autodsl.DslMandatory
+                import kotlin.Boolean
                 import kotlin.String
                 import kotlin.Unit
+                import kotlin.collections.MutableCollection
+                import kotlin.collections.MutableMap
 
                 /**
                  * Entity comment
@@ -81,6 +99,7 @@ class DocTest {
                 public class EntityBuilder {
                   /**
                    * Parameter comment
+                   * With second lineParameter comment
                    * With second line
                    *
                    * @see Entity.a
@@ -106,6 +125,18 @@ class DocTest {
                 }
 
                 public inline fun entity(initializer: EntityBuilder.() -> Unit): Entity = EntityBuilder().apply(initializer).build()
+
+                public inline fun MutableCollection<Entity>.add(builder: EntityBuilder.() -> Unit): Boolean = this@add.add(EntityBuilder().apply(builder).build())
+
+                public inline operator fun MutableCollection<Entity>.plusAssign(builder: EntityBuilder.() -> Unit) {
+                  this@plusAssign += EntityBuilder().apply(builder).build()
+                }
+
+                public inline fun <KEY> MutableMap<KEY, Entity>.put(key: KEY, builder: EntityBuilder.() -> Unit): Entity? = this@put.put(key, EntityBuilder().apply(builder).build())
+
+                public inline operator fun <KEY> MutableMap<KEY, Entity>.`set`(key: KEY, builder: EntityBuilder.() -> Unit) {
+                  this@set.put(key, builder)
+                }
 
                 """.trimIndent(),
         )

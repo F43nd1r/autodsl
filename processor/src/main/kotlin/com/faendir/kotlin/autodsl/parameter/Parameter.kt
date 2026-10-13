@@ -18,14 +18,19 @@ class Parameter(
 
 sealed class CollectionType(
     val createFunction: String,
+    val builderFunction: String,
     val convertFunction: String,
     val singular: String,
 ) {
     class ListType(
         singular: String,
-    ) : CollectionType("listOf", "toList", singular)
+    ) : CollectionType("listOf", "buildList", "toList", singular)
 
     class SetType(
         singular: String,
-    ) : CollectionType("setOf", "toSet", singular)
+    ) : CollectionType("setOf", "buildSet", "toSet", singular)
+
+    class MapType(
+        singular: String,
+    ) : CollectionType("mapOf", "buildMap", "toMap", singular)
 }
