@@ -28,14 +28,20 @@ fun compile(
     @Language("kotlin") eval: String = "fun test() { }",
     @Language("kotlin") generates: String? = null,
     expect: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
+    compare: Boolean = true,
 ): List<DynamicTest> {
     val compileKsp by lazy { compileKsp(source, eval, expect) }
     val compileKapt by lazy { compileKapt(source, eval, expect) }
+
     return listOfNotNull(
         DynamicTest.dynamicTest("ksp") { compileKsp },
         DynamicTest.dynamicTest("kapt") { compileKapt },
-        DynamicTest.dynamicTest("compare") {
-            expectThat(compileKsp.map { it.readText() }).containsExactlyInAnyOrder(compileKapt.map { it.readText() })
+        if (compare) {
+            DynamicTest.dynamicTest("compare") {
+                expectThat(compileKsp.map { it.readText() }).containsExactlyInAnyOrder(compileKapt.map { it.readText() })
+            }
+        } else {
+            null
         },
         generates?.let { DynamicTest.dynamicTest("generates") { expectThat(compileKsp.map { it.readText() }).contains(generates) } },
     )
