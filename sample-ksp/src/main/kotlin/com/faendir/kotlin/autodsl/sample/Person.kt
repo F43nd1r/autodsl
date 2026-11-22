@@ -15,6 +15,7 @@ class Person(
     val name: String = "Max",
     val age: Int,
     val address: Address?,
+    val hobbies: List<Hobby> = emptyList(),
     val friends: List<Person> = emptyList(),
     @AutoDslRequired("n")
     val givenName: String? = null,
@@ -28,6 +29,36 @@ data class Address(
     val zipCode: Int,
     val location: Location?,
 )
+
+@AutoDsl(dslMarker = MyDsl::class)
+sealed interface Hobby {
+    val name: String
+
+    data class Sport(
+        override val name: String,
+        val teamSize: Int,
+    ) : Hobby
+
+    data class Game(
+        override val name: String,
+        val online: Boolean,
+    ) : Hobby
+
+    data class Art(
+        override val name: String,
+        val medium: String,
+    ) : Hobby
+
+    data class Music(
+        override val name: String,
+        val instrument: String,
+    ) : Hobby
+
+    data class Other<T>(
+        override val name: String,
+        val data: T,
+    ) : Hobby
+}
 
 @AutoDsl(dslMarker = MyDsl::class)
 class Location {
