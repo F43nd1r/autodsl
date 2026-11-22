@@ -1,6 +1,7 @@
 package com.faendir.kotlin.autodsl.ksp
 
 import com.faendir.kotlin.autodsl.AnnotationFinder
+import com.faendir.kotlin.autodsl.PsiElementFactory
 import com.faendir.kotlin.autodsl.SourceInfoResolver
 import com.google.devtools.ksp.KSTypeNotPresentException
 import com.google.devtools.ksp.KspExperimental
@@ -11,6 +12,7 @@ import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFile
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Modifier
@@ -23,13 +25,16 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
+import java.io.File
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
+import org.jetbrains.kotlin.lexer.KtTokens
 import com.google.devtools.ksp.getConstructors as superGetConstructors
 
 @OptIn(KspExperimental::class)
 class KspSourceInfoResolver(
     private val resolver: Resolver,
+    private val psiElementFactory: PsiElementFactory,
 ) : AnnotationFinder<KSAnnotated>(),
     SourceInfoResolver<KSAnnotated, KSClassDeclaration, KSFunctionDeclaration, KSValueParameter> {
     private fun getClassesWithAnnotation(annotation: String): List<KSClassDeclaration> =
@@ -73,6 +78,8 @@ class KspSourceInfoResolver(
 
     override fun KSClassDeclaration.isAbstract(): Boolean = modifiers.contains(Modifier.ABSTRACT)
 
+    override fun KSClassDeclaration.isInner(): Boolean = modifiers.contains(Modifier.INNER)
+
     override fun KSClassDeclaration.getConstructors(): List<KSFunctionDeclaration> = superGetConstructors().toList()
 
     override fun KSFunctionDeclaration.isAccessible(): Boolean = isPublic() || isInternal()
@@ -88,6 +95,31 @@ class KspSourceInfoResolver(
     override fun KSClassDeclaration.getTypeParameters(): List<TypeVariableName> {
         val resolver = typeParameters.toTypeParameterResolver()
         return typeParameters.map { it.toTypeVariableName(resolver) }
+    }
+
+    private fun KSFile.toFileText(): String? =
+        try {
+            // Read directly from disk using the file path
+            File(filePath).readText()
+        } catch (e: Exception) {
+            null
+        }
+
+    override fun KSClassDeclaration.clonePrivateTopLevels(): SourceInfoResolver.ClonedPrivateTopLevels {
+        val file = containingFile ?: return SourceInfoResolver.ClonedPrivateTopLevels(null)
+        val fileText = file.toFileText() ?: return SourceInfoResolver.ClonedPrivateTopLevels(null)
+        val ktFile = psiElementFactory.ktPsiFactory.createFile(file.fileName, fileText)
+
+        val privateDecls =
+            ktFile.declarations.filter {
+                it.hasModifier(KtTokens.PRIVATE_KEYWORD)
+            }
+
+        if (privateDecls.isEmpty()) return SourceInfoResolver.ClonedPrivateTopLevels(ktFile)
+
+        val rawCode = privateDecls.joinToString("\n\n") { it.text }
+
+        return SourceInfoResolver.ClonedPrivateTopLevels(ktFile, rawCode)
     }
 
     override fun KSValueParameter.getTypeDeclaration(): KSClassDeclaration? = type.resolve().declaration as? KSClassDeclaration

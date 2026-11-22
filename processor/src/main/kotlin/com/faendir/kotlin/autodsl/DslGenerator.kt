@@ -10,13 +10,17 @@ import com.squareup.kotlinpoet.CHAR
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.DOUBLE
 import com.squareup.kotlinpoet.FLOAT
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.INT
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LONG
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.SHORT
+import com.squareup.kotlinpoet.TypeAliasSpec
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
@@ -41,8 +45,9 @@ class DslGenerator<A, T : A, C : A, P : A>(
     private val logger: Logger<T>,
     private val codeGenerator: CodeWriter<T>,
     resolver: SourceInfoResolver<A, T, C, P>,
+    psiElementFactory: PsiElementFactory,
 ) : SourceInfoResolver<A, T, C, P> by resolver {
-    private val parameterFactory = ParameterFactory(resolver)
+    private val parameterFactory = ParameterFactory(resolver, psiElementFactory)
 
     private fun error(
         reason: String,
@@ -103,6 +108,10 @@ class DslGenerator<A, T : A, C : A, P : A>(
             error("must not be abstract", entity)
             return false
         }
+        if (entity.isInner()) {
+            error("must not be inner", entity)
+            return false
+        }
         val constructors = entity.getConstructors().filter { it.isAccessible() }
         if (constructors.isEmpty()) {
             error("must have at least one public or internal constructor", entity)
@@ -117,6 +126,7 @@ class DslGenerator<A, T : A, C : A, P : A>(
             return false
         }
         val parameters = parameterFactory.getParameters(constructor, entity)
+        val cloned = entity.clonePrivateTopLevels()
         val entityClass = entity.asClassName()
         val builderClass = entityClass.withBuilderSuffix()
         val entityTypeParameters = entity.getTypeParameters()
@@ -159,39 +169,71 @@ class DslGenerator<A, T : A, C : A, P : A>(
                         )
                     }
                     if (parameters.any { it.hasDefault }) {
-                        addStatement(
-                            "return %T::class.java.getConstructor(%L, %L, %L).newInstance(%L, %L, null)",
-                            entityClass,
-                            parameters
-                                .map {
-                                    "%T::class.%L".codeFmt(
-                                        it.typeName.toRawType().nonnull,
-                                        if (it.typeName.isNullable) "javaObjectType" else "java",
-                                    )
-                                }.joinToCode(),
-                            bitFieldIndices.map { "%T::class.java".codeFmt(INT) }.joinToCode(),
-                            if (kotlinVersion.isAtLeast(1, 5)) {
-                                "%T::class.java".codeFmt(DefaultConstructorMarker::class.asClassName())
-                            } else {
-                                "Class.forName(%S)".codeFmt(DefaultConstructorMarker::class.java.name)
-                            },
-                            parameters
-                                .map {
-                                    when {
-                                        it.typeName.isNullable -> "%L"
-                                        it.typeName == BOOLEAN -> "%L ?: false"
-                                        it.typeName == BYTE -> "%L ?: 0"
-                                        it.typeName == SHORT -> "%L ?: 0"
-                                        it.typeName == INT -> "%L ?: 0"
-                                        it.typeName == LONG -> "%L ?: 0"
-                                        it.typeName == CHAR -> "%L ?: '\\u0000'"
-                                        it.typeName == FLOAT -> "%L ?: 0.0f"
-                                        it.typeName == DOUBLE -> "%L ?: 0.0"
-                                        else -> "%L"
-                                    }.codeFmt(it.name)
-                                }.joinToCode(),
-                            bitFieldIndices.map { "%L".codeFmt(DEFAULTS_BITFLAGS_FIELD_NAME + it) }.joinToCode(),
-                        )
+                        if (parameters.any { it.hasDefault && it.defaultValue != null }) {
+                            val requiredVals =
+                                parameters
+                                    .filter { !it.hasDefault }
+                                    .map { param ->
+                                        val assertion = if (param.typeName.isNullable) "" else "!!"
+                                        "val ${param.name} = this.${param.name}$assertion".codeFmt()
+                                    }
+                            val defaultVals =
+                                parameters
+                                    .filter { it.hasDefault }
+                                    .map { param ->
+                                        val defaultValue = param.defaultValue?.let { "%L".codeFmt(it) } ?: "null".codeFmt()
+                                        val fieldName = DEFAULTS_BITFLAGS_FIELD_NAME + (param.index / 32)
+                                        val bitMask = 1 shl (param.index % 32)
+                                        val assertion = if (param.typeName.isNullable) "" else "!!"
+                                        "val ${param.name} = if(($fieldName and $bitMask) == 0) this.${param.name}$assertion else %L"
+                                            .codeFmt(
+                                                defaultValue,
+                                            )
+                                    }
+                            for (vals in requiredVals + defaultVals) {
+                                addStatement("%L", vals)
+                            }
+
+                            addStatement(
+                                "return %T(%L)",
+                                entityClass,
+                                parameters.map { "%L".codeFmt(it.name) }.joinToCode(),
+                            )
+                        } else {
+                            addStatement(
+                                "return %T::class.java.getConstructor(%L, %L, %L).newInstance(%L, %L, null)",
+                                entityClass,
+                                parameters
+                                    .map {
+                                        "%T::class.%L".codeFmt(
+                                            it.typeName.toRawType().nonnull,
+                                            if (it.typeName.isNullable) "javaObjectType" else "java",
+                                        )
+                                    }.joinToCode(),
+                                bitFieldIndices.map { "%T::class.java".codeFmt(INT) }.joinToCode(),
+                                if (kotlinVersion.isAtLeast(1, 5)) {
+                                    "%T::class.java".codeFmt(DefaultConstructorMarker::class.asClassName())
+                                } else {
+                                    "Class.forName(%S)".codeFmt(DefaultConstructorMarker::class.java.name)
+                                },
+                                parameters
+                                    .map {
+                                        when {
+                                            it.typeName.isNullable -> "%L"
+                                            it.typeName == BOOLEAN -> "%L ?: false"
+                                            it.typeName == BYTE -> "%L ?: 0"
+                                            it.typeName == SHORT -> "%L ?: 0"
+                                            it.typeName == INT -> "%L ?: 0"
+                                            it.typeName == LONG -> "%L ?: 0"
+                                            it.typeName == CHAR -> "%L ?: '\\u0000'"
+                                            it.typeName == FLOAT -> "%L ?: 0.0f"
+                                            it.typeName == DOUBLE -> "%L ?: 0.0"
+                                            else -> "%L"
+                                        }.codeFmt(it.name)
+                                    }.joinToCode(),
+                                bitFieldIndices.map { "%L".codeFmt(DEFAULTS_BITFLAGS_FIELD_NAME + it) }.joinToCode(),
+                            )
+                        }
                     } else {
                         addStatement(
                             "return %T(%L)",
@@ -217,7 +259,8 @@ class DslGenerator<A, T : A, C : A, P : A>(
                 addStatement("return %T().apply(initializer).build()", builderType)
                 returns(entityType)
             }
-        }.writeTo(entity, codeGenerator)
+            cloned.file?.let { addImportsFrom(cloned) }
+        }.writeTo(entity, codeGenerator, cloned.rawCode)
         return true
     }
 
